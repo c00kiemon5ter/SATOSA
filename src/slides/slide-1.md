@@ -1,5 +1,0 @@
-class: center, middle
-
-# Title
-
----
