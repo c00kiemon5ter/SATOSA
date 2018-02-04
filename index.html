@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>The future of SATOSA</title>
+    <meta name="description" content="Some description about the slides">
+    <meta name="author" content="You">
+    <link rel="stylesheet" href="css/main.css">
+  </head>
+  <body>
+    <textarea id="source">name: title
+class: center middle
+
+# The future of SATOSA
+
+### a draft roadmap
+
+.mute[
+2018-02-06 @ TIIME Vienna
+]
+
+.small[
+Powered by
+[remark][remark],
+[remark-boilerplate][remark-tpl]
+and
+[mermaid][mermaid]
+]
+
+???
+
+- Hi everyone and thanks for having me.
+- Thanks to Rainer Hörbe for organising TIIME and the people involved.
+- Thanks to SUNET for bringing me here.
+
+---
+name: whoami
+
+## Ioannis –Ivan– Kanakarakis .small[_a.k.a. .mute[c00kiemon5ter]_]
+
+I am interested in
+
+* programming as tool of thought
+* systems architecture
+* distributed systems
+* cookie recipes
+
+I enjoy
+
+* simple and readable code
+* understandable, flexible and maintainable design
+* design patterns for implementing cookies
+
+```sh
+$ whoami
+not-an-aai-expert
+```
+
+Find me on
+
+- [Github][github]: `https://github.com/c00kiemon5ter`
+- [LinkedIn][linkedin]: `https://www.linkedin.com/in/kanakarakis/`
+- email: `ivan.kanak@gmail.com`
+
+???
+
+* I have been writing code professionally for more or less 5 years
+
+* main fields of interest include systems architecture and design patterns in
+  order to build scalable and maintainable systems, apps or services
+
+* worked mainly with UNIX systems (Linux, BSD, Solaris, Mac os x, etc)
+
+* switched between backend and frontend development, as well as tooling and API
+  design.
+
+* worked with many languages such as C, Java, Javascript (Nodejs, jQuery,
+  angular1, react/redux/sagas, a bit of ember), Python (django, flask), PHP,
+  Ruby, xQuery/xPath, SQL (MySQL/PostgreSQL)
+
+* lots of shell scripting (mainly awk and POSIX shell or extensions like bash),
+  plus web interface markups (HTML5, Jade, CSS3 (also bootstrap), SSG, etc),
+
+* infrastructure tools like apache, nginx, managing dependencies,
+
+* a bit of packaging and logging, monitoring, and general troubleshooting live
+  systems.
+
+* I like vim, git, vagrant, ansible and arduinos.
+
+* lately interested in functional programming, reactive systems, domain driven
+  design and event sourcing.
+
+* studying distributed systems, distributed transactions and the concerns
+  around "microservices" (whatever that is :), including blockchain systems
+  (Ethereum & smart contracts).
+
+* got into SATOSA through a project that needed to extend pysaml and satosa to
+  support the eIDAS specification, enabling the proxy to work between SAML2int
+  and eIDAS nodes.
+
+---
+name: agenda
+
+## Agenda
+
+* What is SATOSA
+
+* Use cases of SATOSA
+
+* Overview of how it works
+
+* Present state
+
+* Dependencies
+
+* Project-level issues
+
+* Code-level issues
+
+---
+name: what-is-it
+
+.left-column[
+### What is it
+]
+
+.right-column[
+SATOSA stands for «SAML to SAML».
+
+<div class="mermaid">
+graph LR
+	node#1[SAML]
+	node#2[SAML]
+
+	node#1 ---|to| node#2
+</div>
+
+A configurable proxy for translating between different authentication protocols
+such as `SAML2`, `OpenID Connect` and `OAuth2`.
+
+Part of the [IdentityPython][idpy] organisation.
+]
+
+---
+name: what-is-it-2
+count: false
+
+.left-column[
+### What is it
+]
+
+.right-column[
+SATOSA stands for «SAML to SAML»
+
+<div class="mermaid">
+graph LR
+	node#1[Protocol x]
+	node#2[Protocol y]
+
+	node#1 ---|translate to| node#2
+</div>
+
+
+A configurable proxy for translating between different authentication protocols
+such as `SAML2`, `OpenID Connect` and `OAuth2`.
+
+Part of the [IdentityPython][idpy] organisation.
+
+### At its core it is a **_protocol translator_**.
+]
+---
+name: saml-sp-to-many-saml-idp
+
+.left-column[
+### What is it
+### How is it used
+SAML↔SAML
+]
+
+.right-column[
+
+### SAML ↔ SAML (case A)
+
+Connecting a single service provider to multiple identity providers.
+
+<div class="mermaid">
+graph LR
+	sp[SP]
+	ds[Discovery Service]
+	idp1[IdP #1]
+	idp2[IdP #2]
+	proxy
+
+	subgraph SATOSA
+		proxy --- ds
+	end
+
+	sp ---|SAML| proxy
+	proxy ---|SAML| idp1
+	proxy ---|SAML| idp2
+</div>
+
+]
+
+???
+
+### Case
+
+There are SAML2 service providers which are not able to handle multiple
+identity providers. SATOSA can step in to solve this limitation, by being a
+proxy to multiple identity providers utilizing a discovery service.
+
+### Flow
+
+1. The service provider sends a request to the proxy instance. The service
+   provider only knows about the proxy and none of the actual identity
+   providers.
+1. The proxy redirects the user to the discovery service
+1. The entity ID of the identity provider selected by the user is returned to
+   the proxy
+1. The proxy sent authentication request and when completed the the user get
+   redirected back to the proxy
+1. The response returned from the Identity provider is returned to the Service
+   provider
+
+---
+name: many-saml-sp-to-saml-idp
+
+.left-column[
+### What is it
+### How is it used
+SAML↔SAML
+]
+
+.right-column[
+
+### SAML ↔ SAML (case B)
+
+Connecting many service providers to a single identity provider.
+
+<div class="mermaid">
+graph LR
+	sp1[SP #1]
+	sp2[SP #2]
+	idp[IdP]
+	proxy
+
+	subgraph SATOSA
+		proxy
+	end
+
+	sp1 ---|SAML| proxy
+	sp2 ---|SAML| proxy
+	proxy ---|SAML| idp
+</div>
+
+]
+
+???
+
+### Case
+
+There are identity providers that cannot communicate with multiple service
+providers, or, the attributes they release are incompatible to the ones the
+service expects.
+
+### Flow
+
+1. Service provider sends request to proxy
+1. Proxy communicates with the identity provider which normally can't talk to
+   the service provider. A reason for this could be that it can't handle
+   multiple entity ID's or that they are not really compatible.
+1. Response returned by the identity provider containing the user information.
+1. proxy returns the response to the service provider
+
+---
+name: saml-to-oidc
+
+.left-column[
+### What is it
+### How is it used
+SAML↔SAML
+
+SAML↔OIDC
+]
+
+.right-column[
+
+### SAML2 ↔ OpenID Connect and Social network logins
+
+Connecting a SAML2 service provider to OpenID Connect providers.
+
+<div class="mermaid">
+graph LR
+	sp[Service Provider]
+	idp1[Google]
+	idp2[Facebook]
+	proxy
+
+	subgraph SATOSA
+		proxy
+	end
+
+	sp ---|SAML| proxy
+	proxy ---|OIDC| idp1
+	proxy ---|OIDC| idp2
+</div>
+
+]
+
+???
+
+SATOSA is able to act as a proxy between a SAML2 service provider and a OpenID
+Connect provider (as is the case with most social network identity providers).
+
+### Case
+
+This setup makes it possible to connect a SAML2 service provider to multiple
+social media identity providers such as Google and Facebook. The proxy makes it
+possible to mirror a identity provider by generating SAML2 metadata
+corresponding that provider and create dynamic endpoint which are connected to
+a single identity provider. For more information about how to set up, configure
+and run such a proxy instance please visit SAML2<->Social logins
+
+### Flow
+
+1. When the metadata generation script is executed it gathers the metadata from
+   all the backend modules
+1. The metadata generation script creates a new metadata file for every
+   identity provider
+1. The service provider needs to know which identity provider it want to
+   authenticate at. How this is decided is out of scope for this application.
+1. The SAML2 mirror front could handle the dynamic endpoint URL:s generated by
+   the metadata generation script. Based on the URL the request is forwarded to
+   the corresponding backend module
+1. The backend communicates with the identity provider and receives user
+   information
+1. The response is converted to an internal representation and returned to the
+   frontend module
+1. The response is returned to the service provider
+
+---
+name: oidc-to-saml
+
+.left-column[
+### What is it
+### How is it used
+SAML↔SAML
+
+SAML↔OIDC
+
+OIDC↔SAML
+]
+
+.right-column[
+
+### OpenID Connect ↔ SAML2
+
+Connecting a OpenID Connect client to a SAML2 identity provider.
+
+<div class="mermaid">
+graph LR
+	sp[OIDC client]
+	idp[Identity Provider]
+	proxy
+
+	subgraph SATOSA
+		proxy
+	end
+
+	sp ---|OIDC| proxy
+	proxy ---|SAML| idp
+</div>
+
+]
+
+???
+
+SATOSA is able to act as a proxy between an OpenID Connect client and a SAML2
+identity provider.
+
+---
+name: how-it-works
+
+.left-column[
+### What is it
+### How is it used
+### How it works
+]
+
+.right-column.center[
+
+<div class="mermaid">
+graph TD
+	sp(Service Provider)
+	idp(Identity Provider)
+	frontend[Frontend: Protocol x IdP]
+	backend[Backend: Protocol y SP]
+	state[Internal state]
+
+	subgraph SATOSA
+		frontend ---|translate from incoming protocol| state
+		state ---|translate to outgoing protocol| backend
+	end
+
+	sp ---|Protocol x| frontend
+	backend ---|Protocol y| idp
+</div>
+
+]
+
+???
+
+* a frontend plugin mimics protocol x IdP
+
+* a backend plugin mimics protocol y SP/client
+
+* SATOSA has been configured with an attribute map that is used to translate
+  attributes from one protocol to another
+
+* internally SATOSA stores
+
+  * `SESSION_ID`: This is a session identifier given by the SATOSA proxy
+  * `SATOSA_REQUESTER`: The identifier of the requester who called the proxy
+  * `IDHASHER.hash_type`: Which identifier type the requester is asking for
+    (ie, persistent, transient, etc)
+  * `ROUTER`: Which frontend module that should answer the requester
+
+* other plugins/microservices are utilized to achieve more functionality
+  * consent service
+  * account linking
+  * logging
+  * routing
+  * etc
+
+---
+name: metrics
+
+.left-column[
+### What is it
+### How is it used
+### How it works
+### Present state
+]
+
+.right-column[
+
+### Metrics
+
+- 37 releases - latest version `v3.4.8`
+- 1065 commits
+- 3312 SLOC (mesasured by `sloccount` for commit `14ffc19`)
+- 18 open issues
+- 8 pending pull requests
+- 12 contributors
+- TravisCI integration and tests
+- `satosa-developer` repo to easily setup a test environment using `docker`
+- documentation in place
+
+]
+
+???
+
+The numbers are good, but could be better.
+
+Most problems lie underneath the covers, revealed when diving into the code.
+
+Lets look at some concerns.
+
+---
+name: dependencies
+
+.left-column[
+### What is it
+### How is it used
+### How it works
+### Present state
+### Dependencies
+]
+
+.right-column[
+
+Inspect `setup.py` declared dependencies.
+
+```py
+install_requires=[
+    "pyop==2.0.5",       # implements OIDC
+    "pysaml2==4.5.0",    # implements SAML2
+*   "pycryptodomex",     # unused - should be removed
+    "requests",          # client requests to remote resources
+    "PyYAML",            # implements YAML
+*   "gunicorn",          # unused - not a dependency
+    "Werkzeug",          # implements the proxy serving
+    "click",             # used by scripts
+*   "pystache"           # plugin dependency
+],
+extras_require={
+*   "ldap": ["ldap3"]    # plugin dependency
+},
+```
+
+Not many dependencies; that's a good thing :)
+
+..But!
+
+- `pyop` will be deprecated and replaced by new libs
+- `pysaml2` needs work / 70+ issues / 20+ pull requests
+
+]
+
+???
+
+`requests` + `Werkzeug` do we really need our own low level handlers to network
+requests? Should we using something battletested like django or flask?
+
+---
+name: project-issues
+
+.left-column[
+### What is it
+### How is it used
+### How it works
+### Present state
+### Dependencies
+### Project issues
+]
+
+.right-column[
+
+### Project-level improvements
+
+* Documentation
+
+* Tests
+
+* Coding practices
+
+* Release management
+
+]
+
+???
+
+Things I would like to see improve are:
+
+## Documentation
+
+- improve the existing documentation
+- bring it up to date
+- simplify some things and add more examples
+- look into ways to automate the generation
+- sync with platforms like readthedocs
+- document the code / not only the flow-configurations
+
+## Tests
+
+- go over all the tests
+- make sure they test "the right thing"
+- write tests for all pending fixes and new features
+- try to do end-to-end tests
+
+## Coding practices
+
+As part of the idpy.org a set of coding practices will be decided upon for all
+projects to follow. This will include things from formatting and naming
+conventions to usage of dangerous functions such as `subprocess.call()` or the
+usage of `pickle` or git-commit templates and examples.
+
+## Releases
+
+Complains have been all over lately regarding SATOSA releases. I would like
+this to change to a model where releases are smaller and more-often. Releases
+should contain a changelog which should map to the commits included in the
+release.
+
+Breaking changes should be expressed clearly and be accompanied by a migration
+document or script.
+
+---
+name: future
+
+.left-column[
+### What is it
+### How is it used
+### How it works
+### Present state
+### Dependencies
+### Project issues
+### Code issues
+]
+
+.right-column[
+
+### Code-level improvements and architectural concerns
+
+* Separate concerns: layering and subsystems
+
+* Network layer & HTTP conformance
+
+* Persistence & state
+
+* Logging
+
+* Error handling
+
+* Microservices
+
+* Plugins / Hooks / Events
+
+* Dependencies
+
+]
+
+???
+
+* Separate concerns, create layers and proper subsystems / modules
+
+  Each module, each class, each function should be concerned by a single thing
+  and nothing more. Making progress is based on the idea of abstracting
+  concepts such that they have a single responsibility and those are
+  orchestrated on a higher level.
+
+  Separating concerns results to simpler code, easier to debug, easier to
+  replace and easier to extend. Code is naturally layered to express more
+  complex systems.
+
+  Such layers are
+  - data access or IO layer: networking, logging, persistence
+  - business layer: the core domain
+  - application or service layer
+  - presentation layer
+
+  Lots of refactoring.
+
+* Network layer & HTTP conformance
+
+  Separate the network layer - maybe wrap the core in a framework like `django`
+  or `Flask`.
+
+  Correctly handle erroneous requests. Proper logging, meaningful error
+  reporting and appropriate status codes.
+
+  Add proper support for frontend development.  Only send and receive data and
+  offload the presentation to a frontend app or wrapper with templates.
+
+  Define an API and message schema.
+
+* Persistence
+
+  Persistence is defined as state that outlives the process itself.
+
+  Correctly configure and manage persistence (configuration and low level
+  details)
+
+  Unify the interface between in memory, file or database storage.
+
+  Use adapters.
+
+* Logging
+
+  Logging and error handling has been troublesome and more and more people find
+  it hard to understand what broke their setup.
+
+  Logging will change a lot by adopting a structured format, enforcing a sane
+  default behavior and utilizing different logger names and loglevels.
+
+* Error handling
+
+  Error handling will also change as part of the transformation of the logging
+  process but also the refactoring that will take place.
+
+  Proper and meaningful errors should be emitted by each module and errors
+  should be chained (`rase ... from` pattern) to reveal what really has
+  happened.
+
+* Microservices
+
+  Microservices are split from the main repository and a process needs to be
+  decided as to how they will be integrated with SATOSA again. The approach
+  that seems to satisfy and solve most problems is to separate each
+  microservice to its own repository as its own package. Each microservice
+  package has its own functionality and well defined purpose and dependencies.
+
+* Plugins / Hooks
+
+  I want to revisit the trade-offs of the choices made when defining the plugin
+  interface. A flexible system should have multiple points where it can be
+  configured.
+
+  Hooks should be used at key-places where implementors can have access to
+  affect the flow of execution.
+
+  Events (or signals) can be used where asynchronous processing is needed.
+
+  This will allow for greater customisability and things that currently cannot
+  be done with microservices.
+
+  Look into ideas from `py.test`:
+  https://docs.pytest.org/en/latest/writing_plugins.html#writing-plugins
+
+  or `eclipse`:
+  https://www.eclipse.org/articles/Article-Plug-in-architecture/plugin_architecture.html
+
+* Dependencies
+
+  Last but not least, SATOSA depends on other components and their
+  configurations. We are limited by those components, and maybe we should be
+  looking into those too, to extend and improve.
+
+* Other / Misc
+
+  The list does not stop here. More are things are yet to be thought and
+  implemented, like monitoring, health checks, self healing processes, scaling
+  into multiple machines and communicating as a cluster, etc
+
+---
+name: thanks-and-links
+
+.center[
+## Thank you
+### Questions?
+]
+
+### Relevant links
+
+IdentityPython:
+- [Website][idpy] - `http://idpy.org/`
+- [Github][idpy-gh] - `https://github.com/IdentityPython`
+- [Twitter][idpy-twitter] - `https://twitter.com/IdentityPython`
+- [Mailing list][idpy-ml]: `discuss@idpy.org`
+- Slack: _coming soon_
+
+SATOSA:
+- [Github][satosa-gh] - `https://github.com/IdentityPython/SATOSA`
+- [Issues][satosa-issues] - `https://github.com/IdentityPython/SATOSA/issues`
+- [Plugins][satosa-plugins] a.k.a. _microservices_ - `https://github.com/IdentityPython/satosa_microservices`
+- [Mailing list][satosa-ml]: `satosa-users@lists.sunet.se`
+- [developer repo][satosa-dev]: test environment using `docker`
+[github]: https://github.com/c00kiemon5ter
+[linkedin]: https://www.linkedin.com/in/kanakarakis/
+
+[remark]: https://github.com/gnab/remark
+[remark-tpl]: https://github.com/brenopolanski/remark-boilerplate
+[mermaid]: https://github.com/knsv/mermaid
+
+[idpy]: http://idpy.org/
+[idpy-gh]: https://github.com/IdentityPython
+[idpy-twitter]: https://twitter.com/IdentityPython
+[idpy-ml]: https://lists.sunet.se/listinfo/idpy-discuss
+
+[satosa-gh]: https://github.com/IdentityPython/SATOSA
+[satosa-issues]: https://github.com/IdentityPython/SATOSA/issues
+[satosa-plugins]: https://github.com/IdentityPython/satosa_microservices
+[satosa-ml]: https://lists.sunet.se/listinfo/satosa-users
+[satosa-dev]: https://github.com/IdentityPython/satosa-developer
+
+    </textarea>
+    <script src="https://gnab.github.io/remark/downloads/remark-latest.min.js"></script>
+    <script>window.remark || document.write(
+  '<script src="js/vendor/remark.min.js"><\/script>'
+)
+
+    </script>
+    <script src="js/vendor/remark-language.js"></script>
+    <script src="js/main.js"></script>
+    <link rel="stylesheet" href="css/mermaid.css">
+    <script src="js/mermaid.min.js"></script>
+    <script>
+      function init_mermaid_for_current_slide() {
+        const query = '.remark-slide-container.remark-visible .mermaid';
+        const diagrams = Array.from(document.querySelectorAll(query));
+        for (idx in diagrams) {
+          const diagram = diagrams[idx];
+          mermaid.init(undefined, diagram);
+        }
+      }
+      
+      slideshow.on('afterShowSlide', init_mermaid_for_current_slide);
+      
+      mermaid.initialize({
+        startOnLoad: false,
+      });
+      
+      init_mermaid_for_current_slide();
+    </script>
+  </body>
+</html>
