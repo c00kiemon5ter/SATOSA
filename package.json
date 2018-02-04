@@ -30,6 +30,7 @@
     "url": "https://github.com/brenopolanski/remark-boilerplate/issues"
   },
   "scripts": {
+    "gulp": "gulp",
     "clean": "rm -r node_modules/; rm -r build/"
   },
   "devDependencies": {
