@@ -2,7 +2,7 @@
  * For more information on using remark, please check out the wiki pages:
  * https://github.com/gnab/remark/wiki
  */
-var slideShow = remark.create({
+const slideshow = remark.create({
   // Set the slideshow display ratio
   // Default: '4:3'
   // Alternatives: '16:9', ...
@@ -13,7 +13,7 @@ var slideShow = remark.create({
     // Enable or disable navigating using scroll
     // Default: true
     // Alternatives: false
-    scroll: true,
+    scroll: false,
 
     // Enable or disable navigation using touch
     // Default: true
@@ -43,3 +43,5 @@ var slideShow = remark.create({
   highlightLines: true,
   highlightSpans: false
 });
+
+window.slideshow = slideshow;
