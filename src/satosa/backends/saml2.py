@@ -165,6 +165,8 @@ class SAMLBackend(BackendModule, SAMLBaseModule):
         if authn_context:
             kwargs['requested_authn_context'] = authn_context
 
+        kwargs['force_authn'] = context.get_decoration(Context.KEY_FORCE_AUTHN)
+
         try:
             binding, destination = self.sp.pick_binding(
                 "single_sign_on_service", None, "idpsso", entity_id=entity_id)
