@@ -394,8 +394,12 @@ class SAMLFrontend(FrontendModule, SAMLBaseModule):
         :return: response with metadata
         """
         satosa_logging(logger, logging.DEBUG, "Sending metadata response", context.state)
-        metadata_string = create_metadata_string(None, self.idp.config, 4, None, None, None, None,
-                                                 None).decode("utf-8")
+        sign = self.idp.config.key_file and self.idp.config.cert_file
+        metadata_string = create_metadata_string(
+                None,
+                config=self.idp.config,
+                valid=4,
+                sign=sign).decode("utf-8")
         return Response(metadata_string, content="text/xml")
 
     def _register_endpoints(self, providers):
