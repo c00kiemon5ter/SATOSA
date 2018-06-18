@@ -315,6 +315,7 @@ class SAMLFrontend(FrontendModule, SAMLBaseModule):
         sp_policy = policies.get('default', {})
         sp_policy.update(policies.get(sp_entity_id, {}))
 
+        encrypt_assertion = sp_policy.get('encrypt_assertion', True)
         sign_assertion = sp_policy.get('sign_assertion', False)
         sign_response = sp_policy.get('sign_response', True)
         sign_alg = sp_policy.get('sign_alg', 'SIG_RSA_SHA256')
@@ -323,11 +324,12 @@ class SAMLFrontend(FrontendModule, SAMLBaseModule):
         # Construct arguments for method create_authn_response
         # on IdP Server instance
         args = {
-            'identity'      : ava,
-            'name_id'       : name_id,
-            'authn'         : auth_info,
-            'sign_response' : sign_response,
+            'identity': ava,
+            'name_id': name_id,
+            'authn': auth_info,
+            'sign_response': sign_response,
             'sign_assertion': sign_assertion,
+            'encrypt_assertion': encrypt_assertion,
         }
 
         # Add the SP details
