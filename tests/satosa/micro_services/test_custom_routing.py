@@ -2,12 +2,14 @@ from base64 import urlsafe_b64encode
 
 import pytest
 
+import satosa.config.errors
 from satosa.context import Context
-from satosa.exception import SATOSAError, SATOSAConfigurationError
+from satosa.exception import SATOSAError
 from satosa.internal_data import InternalRequest
 from satosa.micro_services.custom_routing import DecideIfRequesterIsAllowed
 
-TARGET_ENTITY = "entity1"
+
+TARGET_ENTITY = 'entity1'
 
 
 @pytest.fixture
@@ -130,7 +132,7 @@ class TestDecideIfRequesterIsAllowed:
                 "deny": [requester],
             }
         }
-        with pytest.raises(SATOSAConfigurationError):
+        with pytest.raises(satosa.config.errors.ConfigurationError):
             self.create_decide_service(rules)
 
     def test_defaults_to_allow_all_requesters_for_target_entity_without_specific_rules(self, target_context):

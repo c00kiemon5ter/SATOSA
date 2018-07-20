@@ -5,8 +5,8 @@ import responses
 from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
 
+import satosa.config
 from satosa.proxy_server import make_app
-from satosa.satosa_config import SATOSAConfig
 
 
 class TestConsent:
@@ -18,7 +18,9 @@ class TestConsent:
         satosa_config_dict["MICRO_SERVICES"].append(consent_module_config)
 
         # application
-        test_client = Client(make_app(SATOSAConfig(satosa_config_dict)), BaseResponse)
+        configuration = satosa.config.parse(satosa_config_dict)
+        app = make_app(configuration)
+        test_client = Client(app, BaseResponse)
 
         # incoming auth req
         http_resp = test_client.get("/{}/{}/request".format(satosa_config_dict["BACKEND_MODULES"][0]["name"],

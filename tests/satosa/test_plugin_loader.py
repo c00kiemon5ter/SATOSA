@@ -3,8 +3,8 @@ import json
 import pytest
 import yaml
 
+import satosa.config.errors
 from satosa.backends.base import BackendModule
-from satosa.exception import SATOSAConfigurationError
 from satosa.frontends.base import FrontendModule
 from satosa.micro_services.base import RequestMicroService, ResponseMicroService
 from satosa.plugin_loader import backend_filter, frontend_filter, _request_micro_service_filter, _response_micro_service_filter, _load_plugin_config
@@ -73,5 +73,5 @@ class TestLoadPluginConfig(object):
 
     def test_handles_malformed_data(self):
         data = """{foo: bar"""  # missing closing bracket
-        with pytest.raises(SATOSAConfigurationError):
+        with pytest.raises(satosa.config.errors.ConfigurationError):
             _load_plugin_config(data)

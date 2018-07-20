@@ -8,9 +8,9 @@ from saml2.metadata import entity_descriptor
 from saml2.sigver import security_context
 from saml2.time_util import in_a_while
 
+import satosa.config
 from satosa.metadata_creation.saml_metadata import create_entity_descriptors, create_signed_entities_descriptor, \
     create_signed_entity_descriptor
-from satosa.satosa_config import SATOSAConfig
 from tests.conftest import BASE_URL
 from tests.util import create_metadata_from_config_dict
 
@@ -55,7 +55,7 @@ class TestCreateEntityDescriptors:
     def test_saml_frontend_with_saml_backend(self, satosa_config_dict, saml_frontend_config, saml_backend_config):
         satosa_config_dict["FRONTEND_MODULES"] = [saml_frontend_config]
         satosa_config_dict["BACKEND_MODULES"] = [saml_backend_config]
-        satosa_config = SATOSAConfig(satosa_config_dict)
+        satosa_config = satosa.config.parse(satosa_config_dict)
         frontend_metadata, backend_metadata = create_entity_descriptors(satosa_config)
 
         assert len(frontend_metadata) == 1
@@ -71,7 +71,7 @@ class TestCreateEntityDescriptors:
     def test_saml_frontend_with_oidc_backend(self, satosa_config_dict, saml_frontend_config, oidc_backend_config):
         satosa_config_dict["FRONTEND_MODULES"] = [saml_frontend_config]
         satosa_config_dict["BACKEND_MODULES"] = [oidc_backend_config]
-        satosa_config = SATOSAConfig(satosa_config_dict)
+        satosa_config = satosa.config.parse(satosa_config_dict)
         frontend_metadata, backend_metadata = create_entity_descriptors(satosa_config)
 
         assert len(frontend_metadata) == 1
@@ -86,7 +86,7 @@ class TestCreateEntityDescriptors:
                                                   oidc_backend_config):
         satosa_config_dict["FRONTEND_MODULES"] = [saml_frontend_config]
         satosa_config_dict["BACKEND_MODULES"] = [saml_backend_config, oidc_backend_config]
-        satosa_config = SATOSAConfig(satosa_config_dict)
+        satosa_config = satosa.config.parse(satosa_config_dict)
         frontend_metadata, backend_metadata = create_entity_descriptors(satosa_config)
 
         assert len(frontend_metadata) == 1
@@ -111,7 +111,7 @@ class TestCreateEntityDescriptors:
                                                                              create_metadata_from_config_dict(
                                                                                  idp_conf2)]}
         satosa_config_dict["BACKEND_MODULES"] = [saml_backend_config]
-        satosa_config = SATOSAConfig(satosa_config_dict)
+        satosa_config = satosa.config.parse(satosa_config_dict)
         frontend_metadata, backend_metadata = create_entity_descriptors(satosa_config)
 
         assert len(frontend_metadata) == 1
@@ -132,7 +132,7 @@ class TestCreateEntityDescriptors:
                                                     oidc_backend_config):
         satosa_config_dict["FRONTEND_MODULES"] = [saml_mirror_frontend_config]
         satosa_config_dict["BACKEND_MODULES"] = [oidc_backend_config]
-        satosa_config = SATOSAConfig(satosa_config_dict)
+        satosa_config = satosa.config.parse(satosa_config_dict)
         frontend_metadata, backend_metadata = create_entity_descriptors(satosa_config)
 
         assert len(frontend_metadata) == 1
@@ -154,7 +154,7 @@ class TestCreateEntityDescriptors:
         saml_backend_config["config"]["sp_config"]["metadata"] = {
             "inline": [create_metadata_from_config_dict(idp_conf)]}
         satosa_config_dict["BACKEND_MODULES"] = [saml_backend_config, oidc_backend_config]
-        satosa_config = SATOSAConfig(satosa_config_dict)
+        satosa_config = satosa.config.parse(satosa_config_dict)
         frontend_metadata, backend_metadata = create_entity_descriptors(satosa_config)
 
         assert len(frontend_metadata) == 1
@@ -179,7 +179,7 @@ class TestCreateEntityDescriptors:
 
         satosa_config_dict["FRONTEND_MODULES"] = [saml_frontend_config, saml_mirror_frontend_config]
         satosa_config_dict["BACKEND_MODULES"] = [oidc_backend_config]
-        satosa_config = SATOSAConfig(satosa_config_dict)
+        satosa_config = satosa.config.parse(satosa_config_dict)
         frontend_metadata, backend_metadata = create_entity_descriptors(satosa_config)
 
         assert len(frontend_metadata) == 2
@@ -209,7 +209,7 @@ class TestCreateEntityDescriptors:
         saml_backend_config["config"]["sp_config"]["metadata"] = {
             "inline": [create_metadata_from_config_dict(idp_conf)]}
         satosa_config_dict["BACKEND_MODULES"] = [saml_backend_config]
-        satosa_config = SATOSAConfig(satosa_config_dict)
+        satosa_config = satosa.config.parse(satosa_config_dict)
         frontend_metadata, backend_metadata = create_entity_descriptors(satosa_config)
 
         assert len(frontend_metadata) == 1

@@ -6,9 +6,9 @@ import json
 from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
 
+import satosa.config
 from satosa.proxy_server import make_app
 from satosa.response import NotFound
-from satosa.satosa_config import SATOSAConfig
 
 
 class TestProxy:
@@ -21,7 +21,9 @@ class TestProxy:
         """
         Performs the test.
         """
-        test_client = Client(make_app(SATOSAConfig(satosa_config_dict)), BaseResponse)
+        configuration = satosa.config.parse(satosa_config_dict)
+        app = make_app(configuration)
+        test_client = Client(app, BaseResponse)
 
         # Make request to frontend
         resp = test_client.get('/{}/{}/request'.format("backend", "frontend"))
@@ -35,7 +37,9 @@ class TestProxy:
         assert resp.data.decode('utf-8') == "Auth response received, passed to test frontend"
 
     def test_unknown_request_path(self, satosa_config_dict):
-        test_client = Client(make_app(SATOSAConfig(satosa_config_dict)), BaseResponse)
+        configuration = satosa.config.parse(satosa_config_dict)
+        app = make_app(configuration)
+        test_client = Client(app, BaseResponse)
 
         resp = test_client.get('/unknown')
         assert resp.status == NotFound._status

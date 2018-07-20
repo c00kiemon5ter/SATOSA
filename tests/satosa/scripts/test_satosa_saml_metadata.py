@@ -24,12 +24,19 @@ def oidc_frontend_config(signing_key_path, mongodb_instance):
 
 
 class TestConstructSAMLMetadata:
-    def test_saml_saml(self, tmpdir, cert_and_key, satosa_config_dict, saml_frontend_config,
-                       saml_backend_config):
-        satosa_config_dict["FRONTEND_MODULES"] = [saml_frontend_config]
-        satosa_config_dict["BACKEND_MODULES"] = [saml_backend_config]
+    def setup(self):
+        self.config_dict = {}
+        self.config_dict['BASE'] = ''
+        self.config_dict['INTERNAL_ATTRIBUTES'] = {'attributes': {}}
+        self.config_dict['STATE_ENCRYPTION_KEY'] = ''
+        self.config_dict['USER_ID_HASH_SALT'] = ''
 
-        create_and_write_saml_metadata(satosa_config_dict, cert_and_key[1], cert_and_key[0], str(tmpdir), None)
+    def test_saml_saml(self, tmpdir, cert_and_key, saml_frontend_config,
+                       saml_backend_config):
+        self.config_dict["FRONTEND_MODULES"] = [saml_frontend_config]
+        self.config_dict["BACKEND_MODULES"] = [saml_backend_config]
+
+        create_and_write_saml_metadata(self.config_dict, cert_and_key[1], cert_and_key[0], str(tmpdir), None)
 
         conf = Config()
         conf.cert_file = cert_and_key[0]
@@ -39,12 +46,12 @@ class TestConstructSAMLMetadata:
             md = MetaDataFile(None, os.path.join(str(tmpdir), file), security=security_ctx)
             assert md.load()
 
-    def test_saml_oidc(self, tmpdir, cert_and_key, satosa_config_dict, saml_frontend_config,
+    def test_saml_oidc(self, tmpdir, cert_and_key, saml_frontend_config,
                        oidc_backend_config):
-        satosa_config_dict["FRONTEND_MODULES"] = [saml_frontend_config]
-        satosa_config_dict["BACKEND_MODULES"] = [oidc_backend_config]
+        self.config_dict["FRONTEND_MODULES"] = [saml_frontend_config]
+        self.config_dict["BACKEND_MODULES"] = [oidc_backend_config]
 
-        create_and_write_saml_metadata(satosa_config_dict, cert_and_key[1], cert_and_key[0], str(tmpdir), None)
+        create_and_write_saml_metadata(self.config_dict, cert_and_key[1], cert_and_key[0], str(tmpdir), None)
 
         conf = Config()
         conf.cert_file = cert_and_key[0]
@@ -54,12 +61,12 @@ class TestConstructSAMLMetadata:
 
         assert not os.path.isfile(os.path.join(str(tmpdir), "backend.xml"))
 
-    def test_oidc_saml(self, tmpdir, cert_and_key, satosa_config_dict, oidc_frontend_config,
+    def test_oidc_saml(self, tmpdir, cert_and_key, oidc_frontend_config,
                        saml_backend_config):
-        satosa_config_dict["FRONTEND_MODULES"] = [oidc_frontend_config]
-        satosa_config_dict["BACKEND_MODULES"] = [saml_backend_config]
+        self.config_dict["FRONTEND_MODULES"] = [oidc_frontend_config]
+        self.config_dict["BACKEND_MODULES"] = [saml_backend_config]
 
-        create_and_write_saml_metadata(satosa_config_dict, cert_and_key[1], cert_and_key[0], str(tmpdir), None)
+        create_and_write_saml_metadata(self.config_dict, cert_and_key[1], cert_and_key[0], str(tmpdir), None)
 
         conf = Config()
         conf.cert_file = cert_and_key[0]
@@ -69,14 +76,14 @@ class TestConstructSAMLMetadata:
 
         assert not os.path.isfile(os.path.join(str(tmpdir), "frontend.xml"))
 
-    def test_split_frontend_metadata_to_separate_files(self, tmpdir, cert_and_key, satosa_config_dict,
-                                                       saml_mirror_frontend_config, saml_backend_config,
-                                                       oidc_backend_config):
+    def test_split_frontend_metadata_to_separate_files(
+            self, tmpdir, cert_and_key, saml_mirror_frontend_config,
+            saml_backend_config, oidc_backend_config):
 
-        satosa_config_dict["FRONTEND_MODULES"] = [saml_mirror_frontend_config]
-        satosa_config_dict["BACKEND_MODULES"] = [oidc_backend_config, saml_backend_config]
+        self.config_dict["FRONTEND_MODULES"] = [saml_mirror_frontend_config]
+        self.config_dict["BACKEND_MODULES"] = [oidc_backend_config, saml_backend_config]
 
-        create_and_write_saml_metadata(satosa_config_dict, cert_and_key[1], cert_and_key[0], str(tmpdir), None,
+        create_and_write_saml_metadata(self.config_dict, cert_and_key[1], cert_and_key[0], str(tmpdir), None,
                                        split_frontend_metadata=True)
 
         conf = Config()
@@ -90,13 +97,14 @@ class TestConstructSAMLMetadata:
             md = MetaDataFile(None, file, security=security_ctx)
             assert md.load()
 
-    def test_split_backend_metadata_to_separate_files(self, tmpdir, cert_and_key, satosa_config_dict,
-                                                      saml_frontend_config, saml_backend_config):
+    def test_split_backend_metadata_to_separate_files(
+            self, tmpdir, cert_and_key,
+            saml_frontend_config, saml_backend_config):
 
-        satosa_config_dict["FRONTEND_MODULES"] = [saml_frontend_config]
-        satosa_config_dict["BACKEND_MODULES"] = [saml_backend_config, saml_backend_config]
+        self.config_dict["FRONTEND_MODULES"] = [saml_frontend_config]
+        self.config_dict["BACKEND_MODULES"] = [saml_backend_config, saml_backend_config]
 
-        create_and_write_saml_metadata(satosa_config_dict, cert_and_key[1], cert_and_key[0], str(tmpdir), None,
+        create_and_write_saml_metadata(self.config_dict, cert_and_key[1], cert_and_key[0], str(tmpdir), None,
                                        split_backend_metadata=True)
 
         conf = Config()

@@ -5,9 +5,9 @@ from saml2.config import SPConfig, IdPConfig
 from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
 
+import satosa.config
 from satosa.metadata_creation.saml_metadata import create_entity_descriptors
 from satosa.proxy_server import make_app
-from satosa.satosa_config import SATOSAConfig
 from tests.users import USERS
 from tests.util import FakeSP, FakeIdP
 
@@ -20,10 +20,13 @@ class TestSAMLToSAML:
         satosa_config_dict["BACKEND_MODULES"] = [saml_backend_config]
         satosa_config_dict["INTERNAL_ATTRIBUTES"]["attributes"] = {attr_name: {"saml": [attr_name]} for attr_name in
                                                                    USERS[user_id]}
-        frontend_metadata, backend_metadata = create_entity_descriptors(SATOSAConfig(satosa_config_dict))
+
+        configuration = satosa.config.parse(satosa_config_dict)
+        frontend_metadata, backend_metadata = create_entity_descriptors(configuration)
 
         # application
-        test_client = Client(make_app(SATOSAConfig(satosa_config_dict)), BaseResponse)
+        app = make_app(configuration)
+        test_client = Client(app, BaseResponse)
 
         # config test SP
         frontend_metadata_str = str(frontend_metadata[frontend_config["name"]][0])
