@@ -355,7 +355,7 @@ class FakeFrontend(FrontendModule):
             return self.register_endpoints_func(backend_names)
 
 
-class TestBackend(BackendModule):
+class MyBackend(BackendModule):
     def __init__(self, auth_callback_func, internal_attributes, config, base_url, name):
         super().__init__(auth_callback_func, internal_attributes, base_url, name)
 
@@ -373,7 +373,7 @@ class TestBackend(BackendModule):
         return self.auth_callback_func(context, internal_resp)
 
 
-class TestFrontend(FrontendModule):
+class MyFrontend(FrontendModule):
     def __init__(self, auth_req_callback_func, internal_attributes, config, base_url, name):
         super().__init__(auth_req_callback_func, internal_attributes, base_url, name)
 
@@ -389,7 +389,7 @@ class TestFrontend(FrontendModule):
         return Response("Auth response received, passed to test frontend")
 
 
-class TestRequestMicroservice(RequestMicroService):
+class MyRequestMicroservice(RequestMicroService):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -400,7 +400,7 @@ class TestRequestMicroservice(RequestMicroService):
         pass
 
 
-class TestResponseMicroservice(ResponseMicroService):
+class MyResponseMicroservice(ResponseMicroService):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

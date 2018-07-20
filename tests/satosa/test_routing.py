@@ -2,7 +2,7 @@ import pytest
 
 from satosa.context import Context
 from satosa.routing import ModuleRouter, SATOSANoBoundEndpointError
-from tests.util import TestBackend, TestFrontend, TestRequestMicroservice, TestResponseMicroservice
+from tests.util import MyBackend, MyFrontend, MyRequestMicroservice, MyResponseMicroservice
 
 FRONTEND_NAMES = ["Saml2IDP", "VOPaaSSaml2IDP"]
 BACKEND_NAMES = ["Saml2SP", "VOPaaSSaml2SP"]
@@ -13,16 +13,16 @@ class TestModuleRouter:
     def create_router(self):
         backends = []
         for provider in BACKEND_NAMES:
-            backends.append(TestBackend(None, {"attributes": {}}, None, None, provider))
+            backends.append(MyBackend(None, {"attributes": {}}, None, None, provider))
 
         frontends = []
         for receiver in FRONTEND_NAMES:
-            frontends.append(TestFrontend(None, {"attributes": {}}, None, None, receiver))
+            frontends.append(MyFrontend(None, {"attributes": {}}, None, None, receiver))
 
         request_micro_service_name = "RequestService"
         response_micro_service_name = "ResponseService"
-        microservices = [TestRequestMicroservice(request_micro_service_name, base_url="https://satosa.example.com"),
-                         TestResponseMicroservice(response_micro_service_name, base_url="https://satosa.example.com")]
+        microservices = [MyRequestMicroservice(request_micro_service_name, base_url="https://satosa.example.com"),
+                         MyResponseMicroservice(response_micro_service_name, base_url="https://satosa.example.com")]
 
         self.router = ModuleRouter(frontends, backends, microservices)
 

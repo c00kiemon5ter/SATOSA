@@ -147,7 +147,7 @@ def satosa_config_dict(backend_plugin_config, frontend_plugin_config, request_mi
 @pytest.fixture
 def backend_plugin_config():
     data = {
-        "module": "util.TestBackend",
+        "module": "util.MyBackend",
         "name": "backend",
         "config": {"foo": "bar"}
     }
@@ -157,7 +157,7 @@ def backend_plugin_config():
 @pytest.fixture
 def frontend_plugin_config():
     data = {
-        "module": "util.TestFrontend",
+        "module": "util.MyFrontend",
         "name": "frontend",
         "config": {"abc": "xyz"}
     }
@@ -167,7 +167,7 @@ def frontend_plugin_config():
 @pytest.fixture
 def request_microservice_config():
     data = {
-        "module": "util.TestRequestMicroservice",
+        "module": "util.MyRequestMicroservice",
         "name": "request-microservice",
     }
     return data
@@ -176,7 +176,7 @@ def request_microservice_config():
 @pytest.fixture
 def response_microservice_config():
     data = {
-        "module": "util.TestResponseMicroservice",
+        "module": "util.MyResponseMicroservice",
         "name": "response-microservice",
         "config": {"qwe": "rty"}
     }
