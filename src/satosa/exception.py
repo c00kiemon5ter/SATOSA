@@ -10,13 +10,6 @@ class SATOSAError(Exception):
     pass
 
 
-class SATOSAConfigurationError(SATOSAError):
-    """
-    SATOSA configuration error
-    """
-    pass
-
-
 class SATOSAStateError(SATOSAError):
     """
     SATOSA state error.
