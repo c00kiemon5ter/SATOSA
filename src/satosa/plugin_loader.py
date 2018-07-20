@@ -10,8 +10,8 @@ from pydoc import locate
 import yaml
 from yaml.error import YAMLError
 
+import satosa.config.errors
 from .backends.base import BackendModule
-from .exception import SATOSAConfigurationError
 from .frontends.base import FrontendModule
 from .micro_services.base import (MicroService, RequestMicroService, ResponseMicroService)
 
@@ -20,7 +20,6 @@ logger = logging.getLogger(__name__)
 
 @contextmanager
 def prepend_to_import_path(import_paths):
-    import_paths = import_paths or []
     for p in reversed(import_paths):  # insert the specified plugin paths in the same order
         sys.path.insert(0, p)
     yield
@@ -41,8 +40,13 @@ def load_backends(config, callback, internal_attributes):
     :param callback: Function that will be called by the backend after the authentication is done.
     :return: A list of backend modules
     """
-    backend_modules = _load_plugins(config.get("CUSTOM_PLUGIN_MODULE_PATHS"), config["BACKEND_MODULES"], backend_filter,
-                                    config["BASE"], internal_attributes, callback)
+    backend_modules = _load_plugins(
+            config.CUSTOM_PLUGIN_MODULE_PATHS,
+            config.BACKEND_MODULES,
+            backend_filter,
+            config.BASE,
+            internal_attributes,
+            callback)
     logger.info("Setup backends: %s" % [backend.name for backend in backend_modules])
     return backend_modules
 
@@ -62,8 +66,13 @@ def load_frontends(config, callback, internal_attributes):
     has been processed.
     :return: A list of frontend modules
     """
-    frontend_modules = _load_plugins(config.get("CUSTOM_PLUGIN_MODULE_PATHS"), config["FRONTEND_MODULES"],
-                                     frontend_filter, config["BASE"], internal_attributes, callback)
+    frontend_modules = _load_plugins(
+            config.CUSTOM_PLUGIN_MODULE_PATHS,
+            config.FRONTEND_MODULES,
+            frontend_filter,
+            config.BASE,
+            internal_attributes,
+            callback)
     logger.info("Setup frontends: %s" % [frontend.name for frontend in frontend_modules])
     return frontend_modules
 
@@ -145,7 +154,7 @@ def _load_plugin_config(config):
         if hasattr(exc, 'problem_mark'):
             mark = exc.problem_mark
             logger.error("Error position: (%s:%s)" % (mark.line + 1, mark.column + 1))
-            raise SATOSAConfigurationError("The configuration is corrupt.") from exc
+            raise satosa.config.errors.ConfigurationError("The configuration is corrupt.") from exc
 
 
 def _load_plugins(plugin_paths, plugins, plugin_filter, base_url, internal_attributes, callback):
@@ -169,8 +178,8 @@ def _load_plugins(plugin_paths, plugins, plugin_filter, base_url, internal_attri
         for plugin_config in plugins:
             try:
                 module_class = _load_endpoint_module(plugin_config, plugin_filter)
-            except SATOSAConfigurationError as e:
-                raise SATOSAConfigurationError("Configuration error in {}".format(json.dumps(plugin_config))) from e
+            except satosa.config.errors.ConfigurationError as e:
+                raise satosa.config.errors.ConfigurationError("Configuration error in {}".format(json.dumps(plugin_config))) from e
 
             if module_class:
                 module_config = _replace_variables_in_plugin_module_config(plugin_config["config"], base_url,
@@ -184,7 +193,7 @@ def _load_plugins(plugin_paths, plugins, plugin_filter, base_url, internal_attri
 def _load_endpoint_module(plugin_config, plugin_filter):
     _mandatory_params = ("name", "module", "config")
     if not all(k in plugin_config for k in _mandatory_params):
-        raise SATOSAConfigurationError("Missing mandatory plugin configuration parameter: {}".format(_mandatory_params))
+        raise satosa.config.errors.ConfigurationError("Missing mandatory plugin configuration parameter: {}".format(_mandatory_params))
 
     return _load_plugin_module(plugin_config, plugin_filter)
 
@@ -202,7 +211,7 @@ def _load_plugin_module(plugin_config, plugin_filter):
 def _load_microservice(plugin_config, plugin_filter):
     _mandatory_params = ("name", "module")
     if not all(k in plugin_config for k in _mandatory_params):
-        raise SATOSAConfigurationError("Missing mandatory plugin configuration parameter: {}".format(_mandatory_params))
+        raise satosa.config.errors.ConfigurationError("Missing mandatory plugin configuration parameter: {}".format(_mandatory_params))
 
     return _load_plugin_module(plugin_config, plugin_filter)
 
@@ -213,8 +222,8 @@ def _load_microservices(plugin_paths, plugins, plugin_filter, internal_attribute
         for plugin_config in plugins:
             try:
                 module_class = _load_microservice(plugin_config, plugin_filter)
-            except SATOSAConfigurationError as e:
-                raise SATOSAConfigurationError("Configuration error in {}".format(json.dumps(plugin_config))) from e
+            except satosa.config.errors.ConfigurationError as e:
+                raise satosa.config.errors.ConfigurationError("Configuration error in {}".format(json.dumps(plugin_config))) from e
 
             if module_class:
                 instance = module_class(internal_attributes=internal_attributes, config=plugin_config.get("config"),

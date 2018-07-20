@@ -6,12 +6,12 @@ import sys
 from werkzeug.debug import DebuggedApplication
 from werkzeug.serving import run_simple
 
-from satosa.proxy_server import make_app
-from satosa.satosa_config import SATOSAConfig
+import satosa.config
+import satosa.proxy_server
 
-config_file = os.environ.get("SATOSA_CONFIG", "proxy_conf.yaml")
-satosa_config = SATOSAConfig(config_file)
-app = make_app(satosa_config)
+
+configuration = satosa.config.parse()
+app = satosa.proxy_server.make_app(configuration)
 
 
 def main():

@@ -7,11 +7,10 @@ import uuid
 
 from saml2.s_utils import UnknownSystemEntity
 
+import satosa.config.errors
 from satosa import util
 from satosa.micro_services import consent
-
 from .context import Context
-from .exception import SATOSAConfigurationError
 from .exception import SATOSAError, SATOSAAuthenticationError, SATOSAUnknownError
 from .internal_data import UserIdHasher
 from .logging_util import satosa_logging
@@ -42,33 +41,48 @@ class SATOSABase(object):
         :param config: satosa proxy config
         """
         self.config = config
+
         logger.info("Loading backend modules...")
-        backends = load_backends(self.config, self._auth_resp_callback_func,
-                                 self.config["INTERNAL_ATTRIBUTES"])
+        backends = load_backends(
+                self.config,
+                self._auth_resp_callback_func,
+                self.config.INTERNAL_ATTRIBUTES)
+
         logger.info("Loading frontend modules...")
-        frontends = load_frontends(self.config, self._auth_req_callback_func,
-                                   self.config["INTERNAL_ATTRIBUTES"])
+        frontends = load_frontends(
+                self.config,
+                self._auth_req_callback_func,
+                self.config.INTERNAL_ATTRIBUTES)
 
-        self.response_micro_services = []
+        logger.info("Loading request micro services...")
         self.request_micro_services = []
-        logger.info("Loading micro services...")
-        if "MICRO_SERVICES" in self.config:
-            self.request_micro_services.extend(load_request_microservices(self.config.get("CUSTOM_PLUGIN_MODULE_PATHS"),
-                                                                          self.config["MICRO_SERVICES"],
-                                                                          self.config["INTERNAL_ATTRIBUTES"],
-                                                                          self.config["BASE"]))
-            self._link_micro_services(self.request_micro_services, self._auth_req_finish)
+        self.request_micro_services.extend(
+                load_request_microservices(
+                    self.config.CUSTOM_PLUGIN_MODULE_PATHS,
+                    self.config.MICRO_SERVICES,
+                    self.config.INTERNAL_ATTRIBUTES,
+                    self.config.BASE))
+        self._link_micro_services(
+                self.request_micro_services,
+                self._auth_req_finish)
 
-            self.response_micro_services.extend(
-                load_response_microservices(self.config.get("CUSTOM_PLUGIN_MODULE_PATHS"),
-                                            self.config["MICRO_SERVICES"],
-                                            self.config["INTERNAL_ATTRIBUTES"],
-                                            self.config["BASE"]))
-            self._verify_response_micro_services(self.response_micro_services)
-            self._link_micro_services(self.response_micro_services, self._auth_resp_finish)
+        logger.info("Loading response micro services...")
+        self.response_micro_services = []
+        self.response_micro_services.extend(
+            load_response_microservices(
+                self.config.CUSTOM_PLUGIN_MODULE_PATHS,
+                self.config.MICRO_SERVICES,
+                self.config.INTERNAL_ATTRIBUTES,
+                self.config.BASE))
+        self._verify_response_micro_services(self.response_micro_services)
+        self._link_micro_services(
+                self.response_micro_services,
+                self._auth_resp_finish)
 
-        self.module_router = ModuleRouter(frontends, backends,
-                                          self.request_micro_services + self.response_micro_services)
+        self.module_router = ModuleRouter(
+                frontends,
+                backends,
+                self.request_micro_services + self.response_micro_services)
 
     def _link_micro_services(self, micro_services, finisher):
         if not micro_services:
@@ -83,12 +97,12 @@ class SATOSABase(object):
         account_linking_index = next((i for i in range(len(response_micro_services))
                                       if isinstance(response_micro_services[i], AccountLinking)), -1)
         if account_linking_index > 0:
-            raise SATOSAConfigurationError("Account linking must be configured first in the list of micro services")
+            raise satosa.config.errors.ConfigurationError("Account linking must be configured first in the list of micro services")
 
         consent_index = next((i for i in range(len(response_micro_services))
                               if isinstance(response_micro_services[i], Consent)), -1)
         if consent_index != -1 and consent_index < len(response_micro_services) - 1:
-            raise SATOSAConfigurationError("Consent must be configured last in the list of micro services")
+            raise satosa.config.errors.ConfigurationError("Consent must be configured last in the list of micro services")
 
     def _auth_req_callback_func(self, context, internal_request):
         """
@@ -132,23 +146,24 @@ class SATOSABase(object):
 
     def _auth_resp_finish(self, context, internal_response):
         # re-hash user id since e.g. account linking micro service might have changed it
-        user_id = UserIdHasher.hash_id(self.config["USER_ID_HASH_SALT"],
-                                       internal_response.user_id,
-                                       internal_response.requester,
-                                       context.state)
+        user_id = UserIdHasher.hash_id(
+                self.config.USER_ID_HASH_SALT,
+                internal_response.user_id,
+                internal_response.requester,
+                context.state)
         internal_response.user_id = user_id
         internal_response.user_id_hash_type = UserIdHasher.hash_type(context.state)
-        user_id_to_attr = self.config["INTERNAL_ATTRIBUTES"].get("user_id_to_attr", None)
+        user_id_to_attr = self.config.INTERNAL_ATTRIBUTES.get("user_id_to_attr", None)
         if user_id_to_attr:
             internal_response.attributes[user_id_to_attr] = [internal_response.user_id]
 
         # Hash all attributes specified in INTERNAL_ATTRIBUTES["hash"]
-        hash_attributes = self.config["INTERNAL_ATTRIBUTES"].get("hash", [])
+        hash_attributes = self.config.INTERNAL_ATTRIBUTES.get("hash", [])
         internal_attributes = internal_response.attributes
         for attribute in hash_attributes:
             # hash all attribute values individually
             if attribute in internal_attributes:
-                hashed_values = [UserIdHasher.hash_data(self.config["USER_ID_HASH_SALT"], v)
+                hashed_values = [UserIdHasher.hash_data(self.config.USER_ID_HASH_SALT, v)
                              for v in internal_attributes[attribute]]
                 internal_attributes[attribute] = hashed_values
 
@@ -173,12 +188,12 @@ class SATOSABase(object):
 
         context.request = None
         internal_response.requester = context.state[STATE_KEY]["requester"]
-        if "user_id_from_attrs" in self.config["INTERNAL_ATTRIBUTES"]:
+        if "user_id_from_attrs" in self.config.INTERNAL_ATTRIBUTES:
             user_id = ["".join(internal_response.attributes[attr]) for attr in
-                       self.config["INTERNAL_ATTRIBUTES"]["user_id_from_attrs"]]
+                       self.config.INTERNAL_ATTRIBUTES["user_id_from_attrs"]]
             internal_response.user_id = "".join(user_id)
         # Hash the user id
-        user_id = UserIdHasher.hash_data(self.config["USER_ID_HASH_SALT"], internal_response.user_id)
+        user_id = UserIdHasher.hash_data(self.config.USER_ID_HASH_SALT, internal_response.user_id)
         internal_response.user_id = user_id
 
         if self.response_micro_services:
@@ -231,8 +246,10 @@ class SATOSABase(object):
         :param context: Session context
         """
         try:
-            state = cookie_to_state(context.cookie, self.config["COOKIE_STATE_NAME"],
-                                    self.config["STATE_ENCRYPTION_KEY"])
+            state = cookie_to_state(
+                    context.cookie,
+                    self.config.COOKIE_STATE_NAME,
+                    self.config.STATE_ENCRYPTION_KEY)
         except SATOSAStateError:
             state = State()
         context.state = state
@@ -248,8 +265,8 @@ class SATOSABase(object):
         :param context: Session context
         """
 
-        cookie = state_to_cookie(context.state, self.config["COOKIE_STATE_NAME"], "/",
-                                 self.config["STATE_ENCRYPTION_KEY"])
+        cookie = state_to_cookie(context.state, self.config.COOKIE_STATE_NAME, '/',
+                                 self.config.STATE_ENCRYPTION_KEY)
         resp.headers.append(tuple(cookie.output().split(": ", 1)))
 
     def run(self, context):

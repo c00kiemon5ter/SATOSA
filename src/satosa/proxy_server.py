@@ -129,25 +129,18 @@ class WsgiApplication(SATOSABase):
             return resp(environ, start_response)
 
 
-def make_app(satosa_config):
+def make_app(configuration):
+    logging.config.dictConfig(configuration.LOGGING)
+
     try:
-        if "LOGGING" in satosa_config:
-            logging.config.dictConfig(satosa_config["LOGGING"])
-        else:
-            stderr_handler = logging.StreamHandler(sys.stderr)
-            stderr_handler.setLevel(logging.DEBUG)
+        pkg = pkg_resources.get_distribution(module.__name__)
+        msg = 'Running SATOSA version: {v}'.format(v=pkg.version)
+        logger.info(msg)
+    except (NameError, pkg_resources.DistributionNotFound):
+        pass
 
-            root_logger = logging.getLogger("")
-            root_logger.addHandler(stderr_handler)
-            root_logger.setLevel(logging.DEBUG)
-
-        try:
-            pkg = pkg_resources.get_distribution(module.__name__)
-            logger.info("Running SATOSA version %s",
-                        pkg_resources.get_distribution("SATOSA").version)
-        except (NameError, pkg_resources.DistributionNotFound):
-            pass
-        return ToBytesMiddleware(WsgiApplication(satosa_config))
+    try:
+        return ToBytesMiddleware(WsgiApplication(configuration))
     except Exception:
         logger.exception("Failed to create WSGI app.")
         raise

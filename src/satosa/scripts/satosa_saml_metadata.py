@@ -1,13 +1,15 @@
 import os
 
 import click
+
 from saml2.config import Config
 from saml2.sigver import security_context
+
+import satosa.config
 
 from ..metadata_creation.saml_metadata import create_entity_descriptors
 from ..metadata_creation.saml_metadata import create_signed_entities_descriptor
 from ..metadata_creation.saml_metadata import create_signed_entity_descriptor
-from ..satosa_config import SATOSAConfig
 
 
 def _get_security_context(key, cert):
@@ -40,9 +42,9 @@ def create_and_write_saml_metadata(proxy_conf, key, cert, dir, valid, split_fron
     """
     Generates SAML metadata for the given PROXY_CONF, signed with the given KEY and associated CERT.
     """
-    satosa_config = SATOSAConfig(proxy_conf)
+    configuration = satosa.config.parse(proxy_conf)
     secc = _get_security_context(key, cert)
-    frontend_entities, backend_entities = create_entity_descriptors(satosa_config)
+    frontend_entities, backend_entities = create_entity_descriptors(configuration)
 
     output = []
     if frontend_entities:

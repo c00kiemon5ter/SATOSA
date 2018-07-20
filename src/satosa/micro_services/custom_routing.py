@@ -1,10 +1,9 @@
 import logging
 from base64 import urlsafe_b64encode
 
+import satosa.config.errors
 from satosa.context import Context
-
 from .base import RequestMicroService
-from ..exception import SATOSAConfigurationError
 from ..exception import SATOSAError
 
 logger = logging.getLogger(__name__)
@@ -47,7 +46,7 @@ class DecideIfRequesterIsAllowed(RequestMicroService):
         for target_entity, rules in config["rules"].items():
             conflicting_rules = set(rules.get("deny", [])).intersection(rules.get("allow", []))
             if conflicting_rules:
-                raise SATOSAConfigurationError("Conflicting requester rules for DecideIfRequesterIsAllowed,"
+                raise satosa.config.errors.ConfigurationError("Conflicting requester rules for DecideIfRequesterIsAllowed,"
                                                "{} is both denied and allowed".format(conflicting_rules))
 
         # target entity id is base64 url encoded to make it usable in URLs,
