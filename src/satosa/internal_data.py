@@ -56,7 +56,8 @@ class UserIdHasher(object):
         :param value: value to hash together with the salt
         :return: hash value (SHA512)
         """
-        return hashlib.sha512((value + salt).encode("utf-8")).hexdigest()
+        data = "{value}{salt}".format(value=value, salt=salt).encode()
+        return hashlib.sha512(data).hexdigest()
 
     @staticmethod
     def hash_type(state):
@@ -104,7 +105,12 @@ class UserIdHasher(object):
         else:
             user_id = user_id_fmt.format(**formatters)
 
-        return UserIdHasher.hash_data(salt, user_id)
+        if hash_type is UserIdHashType.public_email:
+            hasher = lambda salt, user_id: user_id
+        else:
+            hasher = UserIdHasher.hash_data
+
+        return hasher(salt, user_id)
 
 
 class AuthenticationInformation(object):
