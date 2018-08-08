@@ -14,12 +14,21 @@ from saml2.entity_category import refeds, swamid, edugain
 from saml2.entity_category.edugain import COCO
 from saml2.entity_category.refeds import RESEARCH_AND_SCHOLARSHIP
 from saml2.entity_category.swamid import SFS_1993_1153, RESEARCH_AND_EDUCATION, EU, HEI, NREN
-from saml2.saml import NAMEID_FORMAT_PERSISTENT, NAMEID_FORMAT_TRANSIENT
+from saml2.saml import NAMEID_FORMAT_PERSISTENT
+from saml2.saml import NAMEID_FORMAT_TRANSIENT
+from saml2.saml import NAMEID_FORMAT_EMAILADDRESS
+from saml2.saml import NAMEID_FORMAT_UNSPECIFIED
 from saml2.samlp import NameIDPolicy
 
+from satosa.exception import SATOSAError
 from satosa.attribute_mapping import AttributeMapper
-from satosa.frontends.saml2 import SAMLFrontend, saml_name_id_format_to_hash_type, SAMLMirrorFrontend
-from satosa.internal_data import InternalResponse, AuthenticationInformation, InternalRequest
+from satosa.frontends.saml2 import SAMLFrontend
+from satosa.frontends.saml2 import SAMLMirrorFrontend
+from satosa.frontends.saml2 import saml_name_id_format_to_hash_type
+from satosa.frontends.saml2 import hash_type_to_saml_name_id_format
+from satosa.internal_data import InternalResponse
+from satosa.internal_data import AuthenticationInformation
+from satosa.internal_data import InternalRequest
 from satosa.internal_data import UserIdHashType
 from satosa.state import State
 from tests.users import USERS
@@ -358,10 +367,34 @@ class TestSAMLMirrorFrontend:
 
 class TestSamlNameIdFormatToHashType:
     def test_should_default_to_transient(self):
-        assert saml_name_id_format_to_hash_type("foobar") == UserIdHashType.transient
+        assert saml_name_id_format_to_hash_type("foobar") is UserIdHashType.transient
 
     def test_should_map_transient(self):
-        assert saml_name_id_format_to_hash_type(NAMEID_FORMAT_TRANSIENT) == UserIdHashType.transient
+        assert saml_name_id_format_to_hash_type(NAMEID_FORMAT_TRANSIENT) is UserIdHashType.transient
 
     def test_should_map_persistent(self):
-        assert saml_name_id_format_to_hash_type(NAMEID_FORMAT_PERSISTENT) == UserIdHashType.persistent
+        assert saml_name_id_format_to_hash_type(NAMEID_FORMAT_PERSISTENT) is UserIdHashType.persistent
+
+    def test_should_map_emailaddress(self):
+        assert saml_name_id_format_to_hash_type(NAMEID_FORMAT_EMAILADDRESS) is UserIdHashType.public_email
+
+    def test_should_map_unspecified(self):
+        assert saml_name_id_format_to_hash_type(NAMEID_FORMAT_UNSPECIFIED) is None
+
+
+class TestSamlHashTypeToNameIdFormat:
+    def test_should_fail_unknown(self):
+        with pytest.raises(SATOSAError):
+            hash_type_to_saml_name_id_format(UserIdHashType.public)
+
+    def test_should_map_transient(self):
+        assert hash_type_to_saml_name_id_format(UserIdHashType.transient) is NAMEID_FORMAT_TRANSIENT
+
+    def test_should_map_persistent(self):
+        assert hash_type_to_saml_name_id_format(UserIdHashType.persistent) is NAMEID_FORMAT_PERSISTENT
+
+    def test_should_map_emailaddress(self):
+        assert hash_type_to_saml_name_id_format(UserIdHashType.public_email) is NAMEID_FORMAT_EMAILADDRESS
+
+    def test_should_map_none_to_unspecified(self):
+        assert hash_type_to_saml_name_id_format(None) is NAMEID_FORMAT_UNSPECIFIED

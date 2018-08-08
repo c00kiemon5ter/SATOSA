@@ -11,12 +11,17 @@ from saml2 import SAMLError, xmldsig
 from saml2.config import IdPConfig
 from saml2.extension.ui import NAMESPACE as UI_NAMESPACE
 from saml2.metadata import create_metadata_string
-from saml2.saml import NameID, NAMEID_FORMAT_TRANSIENT, NAMEID_FORMAT_PERSISTENT
+from saml2.saml import NameID
+from saml2.saml import NAMEID_FORMAT_TRANSIENT
+from saml2.saml import NAMEID_FORMAT_PERSISTENT
+from saml2.saml import NAMEID_FORMAT_EMAILADDRESS
+from saml2.saml import NAMEID_FORMAT_UNSPECIFIED
 from saml2.samlp import name_id_policy_from_string
 from saml2.server import Server
 
 from satosa.base import SAMLBaseModule
 from satosa.context import Context
+from satosa.exception import SATOSAError
 from .base import FrontendModule
 from ..internal_data import InternalRequest, UserIdHashType
 from ..logging_util import satosa_logging
@@ -29,19 +34,26 @@ import satosa.util as util
 logger = logging.getLogger(__name__)
 
 
-def saml_name_id_format_to_hash_type(name_format):
+def saml_name_id_format_to_hash_type(nameid_format):
     """
     Translate pySAML2 name format to satosa format
 
-    :type name_format: str
+    :type nameid_format: str
     :rtype: satosa.internal_data.UserIdHashType
-    :param name_format: SAML2 name format
+    :param nameid_format: SAML2 name format
     :return: satosa format
     """
-    if name_format == NAMEID_FORMAT_PERSISTENT:
-        return UserIdHashType.persistent
+    nameid_format_to_hash_type_map = {
+        NAMEID_FORMAT_TRANSIENT:    UserIdHashType.transient,
+        NAMEID_FORMAT_PERSISTENT:   UserIdHashType.persistent,
+        NAMEID_FORMAT_EMAILADDRESS: UserIdHashType.public_email,
+        NAMEID_FORMAT_UNSPECIFIED:  None,
+    }
 
-    return UserIdHashType.transient
+    try:
+        return nameid_format_to_hash_type_map[nameid_format]
+    except KeyError as e:
+        return UserIdHashType.transient
 
 
 def hash_type_to_saml_name_id_format(hash_type):
@@ -53,11 +65,18 @@ def hash_type_to_saml_name_id_format(hash_type):
     :param hash_type: satosa format
     :return: pySAML2 name format
     """
-    if hash_type is UserIdHashType.transient:
-        return NAMEID_FORMAT_TRANSIENT
-    elif hash_type is UserIdHashType.persistent:
-        return NAMEID_FORMAT_PERSISTENT
-    return NAMEID_FORMAT_PERSISTENT
+    hash_type_to_nameid_format_map = {
+        UserIdHashType.transient:    NAMEID_FORMAT_TRANSIENT,
+        UserIdHashType.persistent:   NAMEID_FORMAT_PERSISTENT,
+        UserIdHashType.public_email: NAMEID_FORMAT_EMAILADDRESS,
+        None:                        NAMEID_FORMAT_UNSPECIFIED,
+    }
+
+    try:
+        return hash_type_to_nameid_format_map[hash_type]
+    except KeyError as e:
+        msg = 'No nameid-format for given hash type: {}'.format(hash_type)
+        raise SATOSAError(msg) from e
 
 
 class SAMLFrontend(FrontendModule, SAMLBaseModule):
@@ -301,13 +320,20 @@ class SAMLFrontend(FrontendModule, SAMLBaseModule):
             for k in attributes_to_remove:
                 ava.pop(k, None)
 
-        name_id = NameID(text=internal_response.user_id,
-                         format=hash_type_to_saml_name_id_format(
-                             internal_response.user_id_hash_type),
-                         sp_name_qualifier=None,
-                         name_qualifier=None)
-
         dbgmsg = "returning attributes %s" % json.dumps(ava)
+        satosa_logging(logger, logging.DEBUG, dbgmsg, context.state)
+
+        nameid_format = hash_type_to_saml_name_id_format(
+                internal_response.user_id_hash_type)
+        dbgmsg = "Set nameid-format to {format}".format(format=nameid_format)
+        satosa_logging(logger, logging.DEBUG, dbgmsg, context.state)
+
+        name_id = NameID(
+                text=internal_response.user_id,
+                format=nameid_format,
+                sp_name_qualifier=None,
+                name_qualifier=None)
+        dbgmsg = "Set nameid to {name}".format(name=internal_response.user_id)
         satosa_logging(logger, logging.DEBUG, dbgmsg, context.state)
 
         policies = self.idp_config.get(
@@ -323,10 +349,10 @@ class SAMLFrontend(FrontendModule, SAMLBaseModule):
         # Construct arguments for method create_authn_response
         # on IdP Server instance
         args = {
-            'identity'      : ava,
-            'name_id'       : name_id,
-            'authn'         : auth_info,
-            'sign_response' : sign_response,
+            'identity':       ava,
+            'name_id':        name_id,
+            'authn':          auth_info,
+            'sign_response':  sign_response,
             'sign_assertion': sign_assertion,
         }
 
@@ -378,10 +404,16 @@ class SAMLFrontend(FrontendModule, SAMLBaseModule):
         error_resp = idp.create_error_response(resp_args["in_response_to"],
                                                resp_args["destination"],
                                                Exception(exception.message))
-        http_args = idp.apply_binding(resp_args["binding"], str(error_resp), resp_args["destination"], relay_state,
-                                      response=True)
 
-        satosa_logging(logger, logging.DEBUG, "HTTPargs: %s" % http_args, exception.state)
+        http_args = idp.apply_binding(
+                resp_args["binding"],
+                str(error_resp),
+                resp_args["destination"],
+                relay_state,
+                response=True)
+        dbgmsg = "HTTPargs: %s" % http_args
+        satosa_logging(logger, logging.DEBUG, dbgmsg, exception.state)
+
         return make_saml_response(resp_args["binding"], http_args)
 
     def _metadata_endpoint(self, context):

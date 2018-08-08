@@ -15,6 +15,7 @@ class UserIdHashType(Enum):
     persistent = 2
     pairwise = 3
     public = 4
+    public_email = 5
 
     @classmethod
     def from_string(cls, str):
@@ -80,16 +81,28 @@ class UserIdHasher(object):
         :param state: The current state
         :return: the internal_response containing the hashed user ID
         """
+        user_id_map = {
+            UserIdHashType.transient:    '{id}{req}{ts}',
+            UserIdHashType.persistent:   '{id}{req}',
+            UserIdHashType.pairwise:     '{id}{req}',
+            UserIdHashType.public:       '{id}',
+            UserIdHashType.public_email: '{id}',
+        }
+
         hash_type = UserIdHasher.hash_type(state)
-        if hash_type == UserIdHashType.transient:
-            timestamp = datetime.datetime.now().time()
-            user_id = "{req}{time}{id}".format(req=requester, time=timestamp, id=user_id)
-        elif hash_type == UserIdHashType.persistent or hash_type == UserIdHashType.pairwise:
-            user_id = "{req}{id}".format(req=requester, id=user_id)
-        elif hash_type == UserIdHashType.public:
-            user_id = "{id}".format(id=user_id)
+        formatters = {
+            'id': user_id,
+            'req': requester,
+            'ts': datetime.datetime.now().time(),
+        }
+
+        try:
+            user_id_fmt = user_id_map[hash_type]
+        except KeyError as e:
+            errmsg = "Unknown hash type: {}".format(hash_type)
+            raise ValueError(errmsg) from e
         else:
-            raise ValueError("Unknown hash type: '{}'".format(hash_type))
+            user_id = user_id_fmt.format(**formatters)
 
         return UserIdHasher.hash_data(salt, user_id)
 
