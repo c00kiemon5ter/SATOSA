@@ -15,56 +15,6 @@ class UserIdHasher(object):
     """
 
     @staticmethod
-    def save_state(internal_request, state):
-        """
-        Saves all necessary information needed by the UserIdHasher
-
-        :type internal_request: satosa.internal_data.InternalRequest
-
-        :param internal_request: The request
-        :param state: The current state
-        """
-        UserIdHasher.save_hash_type(internal_request.user_id_hash_type, state)
-
-    @staticmethod
-    def save_hash_type(user_id_hash_type, state):
-        state["hash_type"] = user_id_hash_type
-
-    @staticmethod
-    def hash_type(state):
-        return state["hash_type"]
-
-    @staticmethod
-    def hash_id(salt, user_id, requester, state):
-        """
-        Sets a user id to the internal_response, in the format specified by the internal response
-
-        :type salt: str
-        :type user_id: str
-        :type requester: str
-        :type state: satosa.state.State
-        :rtype: str
-
-        :param salt: A salt string for the ID hashing
-        :param user_id: the user id
-        :param user_id_hash_type: Hashing type
-        :param state: The current state
-        :return: the internal_response containing the hashed user ID
-        """
-        hash_type = UserIdHasher.hash_type(state)
-        if hash_type == NAMEID_FORMAT_TRANSIENT:
-            timestamp = datetime.datetime.now().time()
-            user_id = "{req}{time}{id}".format(req=requester, time=timestamp, id=user_id)
-        elif hash_type == NAMEID_FORMAT_PERSISTENT or hash_type == "pairwise":
-            user_id = "{req}{id}".format(req=requester, id=user_id)
-        elif hash_type == "public":
-            user_id = "{id}".format(id=user_id)
-        else:
-            raise ValueError("Unknown hash type: '{}'".format(hash_type))
-
-        return UserIdHasher.hash_data(salt, user_id)
-
-    @staticmethod
     def hash_data(salt, value):
         """
         Hashes a value together with a salt.
@@ -180,8 +130,7 @@ class InternalResponse(InternalData):
         """
         auth_info = AuthenticationInformation.from_dict(int_resp_dict["auth_info"])
         internal_response = InternalResponse(auth_info=auth_info)
-        if "hash_type" in int_resp_dict:
-            internal_response.user_id_hash_type = int_resp_dict["hash_type"]
+        internal_response.user_id_hash_type = int_resp_dict["hash_type"]
         internal_response.attributes = int_resp_dict["attr"]
         internal_response.user_id = int_resp_dict["usr_id"]
         internal_response.requester = int_resp_dict["to"]
@@ -193,10 +142,11 @@ class InternalResponse(InternalData):
         :rtype: dict[str, dict[str, str] | str]
         :return: A dict representation of the object
         """
-        _dict = {"usr_id": self.user_id,
-                 "attr": self.attributes,
-                 "to": self.requester,
-                 "auth_info": self.auth_info.to_dict()}
-        if self.user_id_hash_type:
-            _dict["hash_type"] = self.user_id_hash_type
+        _dict = {
+            "usr_id": self.user_id,
+            "attr": self.attributes,
+            "to": self.requester,
+            "auth_info": self.auth_info.to_dict(),
+            "hash_type": self.user_id_hash_type,
+        }
         return _dict

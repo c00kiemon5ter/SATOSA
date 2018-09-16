@@ -48,7 +48,6 @@ class TestSATOSABase:
         internal_resp.requester = "test_requester"
         context.state[satosa.base.STATE_KEY] = {"requester": "test_requester"}
         context.state[satosa.routing.STATE_KEY] = satosa_config["FRONTEND_MODULES"][0]["name"]
-        UserIdHasher.save_state(InternalRequest(NAMEID_FORMAT_PERSISTENT, ""), context.state)
 
         base._auth_resp_callback_func(context, internal_resp)
 
@@ -75,7 +74,6 @@ class TestSATOSABase:
         internal_resp = InternalResponse(AuthenticationInformation("", "", ""))
         internal_resp.attributes = copy.copy(attributes)
         internal_resp.user_id = "test_user"
-        UserIdHasher.save_state(InternalRequest(NAMEID_FORMAT_TRANSIENT, ""), context.state)
         context.state[satosa.base.STATE_KEY] = {"requester": "test_requester"}
         context.state[satosa.routing.STATE_KEY] = satosa_config["FRONTEND_MODULES"][0]["name"]
 
@@ -92,7 +90,6 @@ class TestSATOSABase:
         internal_resp.user_id = "user1234"
         context.state[satosa.base.STATE_KEY] = {"requester": "test_requester"}
         context.state[satosa.routing.STATE_KEY] = satosa_config["FRONTEND_MODULES"][0]["name"]
-        UserIdHasher.save_state(InternalRequest(NAMEID_FORMAT_TRANSIENT, ""), context.state)
 
         base._auth_resp_callback_func(context, internal_resp)
         assert internal_resp.attributes["user_id"] == [internal_resp.user_id]

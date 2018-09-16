@@ -126,8 +126,6 @@ class SATOSABase(object):
         satosa_logging(logger, logging.INFO,
                        "Requesting provider: {}".format(internal_request.requester), state)
 
-        # XXX is this needed?
-        UserIdHasher.save_hash_type(internal_request.user_id_hash_type, state)
         if self.request_micro_services:
             return self.request_micro_services[0].process(context, internal_request)
 
@@ -139,8 +137,6 @@ class SATOSABase(object):
         return backend.start_auth(context, internal_request)
 
     def _auth_resp_finish(self, context, internal_response):
-        # re-hash user id since e.g. account linking micro service might have changed it
-        internal_response.user_id_hash_type = UserIdHasher.hash_type(context.state)
         user_id_to_attr = self.config["INTERNAL_ATTRIBUTES"].get("user_id_to_attr", None)
         if user_id_to_attr:
             internal_response.attributes[user_id_to_attr] = [internal_response.user_id]
@@ -190,7 +186,7 @@ class SATOSABase(object):
 
         if self.response_micro_services:
             return self.response_micro_services[0].process(context, internal_response)
-        # XXX otherwise call the last chain of microservices
+
         return self._auth_resp_finish(context, internal_response)
 
     def _handle_satosa_authentication_error(self, error):
