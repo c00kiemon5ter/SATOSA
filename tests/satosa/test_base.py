@@ -9,7 +9,8 @@ from saml2.saml import NAMEID_FORMAT_PERSISTENT
 import satosa
 from satosa.base import SATOSABase
 from satosa.exception import SATOSAConfigurationError
-from satosa.internal_data import InternalResponse, AuthenticationInformation, UserIdHasher, InternalRequest
+from satosa.internal_data import InternalResponse, AuthenticationInformation, InternalRequest
+from satosa.internal_data import hash_data
 from satosa.micro_services import consent
 from satosa.satosa_config import SATOSAConfig
 
@@ -79,8 +80,10 @@ class TestSATOSABase:
 
         base._auth_resp_callback_func(context, internal_resp)
         for attr in satosa_config["INTERNAL_ATTRIBUTES"]["hash"]:
-            assert internal_resp.attributes[attr] == [UserIdHasher.hash_data(satosa_config["USER_ID_HASH_SALT"], v)
-                                                      for v in attributes[attr]]
+            assert internal_resp.attributes[attr] == [
+                hash_data(satosa_config["USER_ID_HASH_SALT"], v)
+                for v in attributes[attr]
+            ]
 
     def test_auth_resp_callback_func_respects_user_id_to_attr(self, context, satosa_config):
         satosa_config["INTERNAL_ATTRIBUTES"]["user_id_to_attr"] = "user_id"

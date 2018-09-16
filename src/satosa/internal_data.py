@@ -9,22 +9,16 @@ import hashlib
 from enum import Enum
 
 
-class UserIdHasher(object):
+def hash_data(salt, value):
     """
-    Class for creating different user id types
+    Hashes a value together with a salt.
+    :type salt: str
+    :type value: str
+    :param salt: hash salt
+    :param value: value to hash together with the salt
+    :return: hash value (SHA512)
     """
-
-    @staticmethod
-    def hash_data(salt, value):
-        """
-        Hashes a value together with a salt.
-        :type salt: str
-        :type value: str
-        :param salt: hash salt
-        :param value: value to hash together with the salt
-        :return: hash value (SHA512)
-        """
-        return hashlib.sha512((value + salt).encode("utf-8")).hexdigest()
+    return hashlib.sha512((value + salt).encode("utf-8")).hexdigest()
 
 
 class AuthenticationInformation(object):

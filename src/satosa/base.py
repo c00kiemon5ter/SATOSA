@@ -13,7 +13,7 @@ from satosa.exception import SATOSAConfigurationError
 from satosa.exception import SATOSAError
 from satosa.exception import SATOSAAuthenticationError
 from satosa.exception import SATOSAUnknownError
-from satosa.internal_data import UserIdHasher
+from satosa.internal_data import hash_data
 from satosa.logging_util import satosa_logging
 from satosa.micro_services import consent
 from satosa.micro_services.account_linking import AccountLinking
@@ -148,7 +148,7 @@ class SATOSABase(object):
             # hash all attribute values individually
             if attribute in internal_attributes:
                 hashed_values = [
-                    UserIdHasher.hash_data(self.config["USER_ID_HASH_SALT"], v)
+                    hash_data(self.config["USER_ID_HASH_SALT"], v)
                     for v in internal_attributes[attribute]
                 ]
                 internal_attributes[attribute] = hashed_values
