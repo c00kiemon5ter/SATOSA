@@ -9,23 +9,6 @@ import hashlib
 from enum import Enum
 
 
-class UserIdHashType(Enum):
-    """
-    All different user id hash types
-    """
-    transient = 1
-    persistent = 2
-    pairwise = 3
-    public = 4
-
-    @classmethod
-    def from_string(cls, str):
-        try:
-            return getattr(cls, str)
-        except AttributeError:
-            raise ValueError("Unknown hash type '{}'".format(str))
-
-
 class UserIdHasher(object):
     """
     Class for creating different user id types
