@@ -8,19 +8,26 @@ import uuid
 from saml2.s_utils import UnknownSystemEntity
 
 from satosa import util
+from satosa.context import Context
+from satosa.exception import SATOSAConfigurationError
+from satosa.exception import SATOSAError
+from satosa.exception import SATOSAAuthenticationError
+from satosa.exception import SATOSAUnknownError
+from satosa.internal_data import UserIdHasher
+from satosa.logging_util import satosa_logging
 from satosa.micro_services import consent
-
-from .context import Context
-from .exception import SATOSAConfigurationError
-from .exception import SATOSAError, SATOSAAuthenticationError, SATOSAUnknownError
-from .internal_data import UserIdHasher
-from .logging_util import satosa_logging
-from .micro_services.account_linking import AccountLinking
-from .micro_services.consent import Consent
-from .plugin_loader import load_backends, load_frontends
-from .plugin_loader import load_request_microservices, load_response_microservices
-from .routing import ModuleRouter, SATOSANoBoundEndpointError
-from .state import cookie_to_state, SATOSAStateError, State, state_to_cookie
+from satosa.micro_services.account_linking import AccountLinking
+from satosa.micro_services.consent import Consent
+from satosa.plugin_loader import load_backends
+from satosa.plugin_loader import load_frontends
+from satosa.plugin_loader import load_request_microservices
+from satosa.plugin_loader import load_response_microservices
+from satosa.routing import ModuleRouter
+from satosa.routing import SATOSANoBoundEndpointError
+from satosa.state import cookie_to_state
+from satosa.state import SATOSAStateError
+from satosa.state import State
+from satosa.state import state_to_cookie
 
 
 logger = logging.getLogger(__name__)
@@ -119,7 +126,8 @@ class SATOSABase(object):
         satosa_logging(logger, logging.INFO,
                        "Requesting provider: {}".format(internal_request.requester), state)
 
-        UserIdHasher.save_state(internal_request, state)
+        # XXX is this needed?
+        UserIdHasher.save_hash_type(internal_request.user_id_hash_type, state)
         if self.request_micro_services:
             return self.request_micro_services[0].process(context, internal_request)
 
@@ -132,11 +140,6 @@ class SATOSABase(object):
 
     def _auth_resp_finish(self, context, internal_response):
         # re-hash user id since e.g. account linking micro service might have changed it
-        user_id = UserIdHasher.hash_id(self.config["USER_ID_HASH_SALT"],
-                                       internal_response.user_id,
-                                       internal_response.requester,
-                                       context.state)
-        internal_response.user_id = user_id
         internal_response.user_id_hash_type = UserIdHasher.hash_type(context.state)
         user_id_to_attr = self.config["INTERNAL_ATTRIBUTES"].get("user_id_to_attr", None)
         if user_id_to_attr:
@@ -148,8 +151,10 @@ class SATOSABase(object):
         for attribute in hash_attributes:
             # hash all attribute values individually
             if attribute in internal_attributes:
-                hashed_values = [UserIdHasher.hash_data(self.config["USER_ID_HASH_SALT"], v)
-                             for v in internal_attributes[attribute]]
+                hashed_values = [
+                    UserIdHasher.hash_data(self.config["USER_ID_HASH_SALT"], v)
+                    for v in internal_attributes[attribute]
+                ]
                 internal_attributes[attribute] = hashed_values
 
         # remove all session state
@@ -173,17 +178,19 @@ class SATOSABase(object):
 
         context.request = None
         internal_response.requester = context.state[STATE_KEY]["requester"]
+
         if "user_id_from_attrs" in self.config["INTERNAL_ATTRIBUTES"]:
-            user_id = ["".join(internal_response.attributes[attr]) for attr in
-                       self.config["INTERNAL_ATTRIBUTES"]["user_id_from_attrs"]]
-            internal_response.user_id = "".join(user_id)
-        # Hash the user id
-        user_id = UserIdHasher.hash_data(self.config["USER_ID_HASH_SALT"], internal_response.user_id)
+            user_id = "".join([
+                "".join(internal_response.attributes[attr])
+                for attr in self.config["INTERNAL_ATTRIBUTES"]["user_id_from_attrs"]
+            ])
+        else:
+            user_id = internal_response.user_id
         internal_response.user_id = user_id
 
         if self.response_micro_services:
             return self.response_micro_services[0].process(context, internal_response)
-
+        # XXX otherwise call the last chain of microservices
         return self._auth_resp_finish(context, internal_response)
 
     def _handle_satosa_authentication_error(self, error):

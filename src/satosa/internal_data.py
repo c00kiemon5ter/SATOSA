@@ -28,7 +28,6 @@ class UserIdHasher(object):
     """
     Class for creating different user id types
     """
-    STATE_KEY = "IDHASHER"
 
     @staticmethod
     def save_state(internal_request, state):
@@ -40,28 +39,15 @@ class UserIdHasher(object):
         :param internal_request: The request
         :param state: The current state
         """
-        state_data = {
-            "hash_type": internal_request.user_id_hash_type.name
-        }
-        state[UserIdHasher.STATE_KEY] = state_data
+        UserIdHasher.save_hash_type(internal_request.user_id_hash_type, state)
 
     @staticmethod
-    def hash_data(salt, value):
-        """
-        Hashes a value together with a salt.
-        :type salt: str
-        :type value: str
-        :param salt: hash salt
-        :param value: value to hash together with the salt
-        :return: hash value (SHA512)
-        """
-        return hashlib.sha512((value + salt).encode("utf-8")).hexdigest()
+    def save_hash_type(user_id_hash_type, state):
+        state["hash_type"] = user_id_hash_type.name
 
     @staticmethod
     def hash_type(state):
-        state_data = state[UserIdHasher.STATE_KEY]
-        hash_type = UserIdHashType.from_string(state_data["hash_type"])
-        return hash_type
+        return UserIdHashType.from_string(state["hash_type"])
 
     @staticmethod
     def hash_id(salt, user_id, requester, state):
@@ -92,6 +78,18 @@ class UserIdHasher(object):
             raise ValueError("Unknown hash type: '{}'".format(hash_type))
 
         return UserIdHasher.hash_data(salt, user_id)
+
+    @staticmethod
+    def hash_data(salt, value):
+        """
+        Hashes a value together with a salt.
+        :type salt: str
+        :type value: str
+        :param salt: hash salt
+        :param value: value to hash together with the salt
+        :return: hash value (SHA512)
+        """
+        return hashlib.sha512((value + salt).encode("utf-8")).hexdigest()
 
 
 class AuthenticationInformation(object):
