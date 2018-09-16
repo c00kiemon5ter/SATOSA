@@ -2,6 +2,8 @@
 The module contains internal data representation in SATOSA and general converteras that can be used
 for converting from SAML/OAuth/OpenID connect to the internal representation.
 """
+from saml2.saml import NAMEID_FORMAT_TRANSIENT
+from saml2.saml import NAMEID_FORMAT_PERSISTENT
 import datetime
 import hashlib
 from enum import Enum
@@ -43,11 +45,11 @@ class UserIdHasher(object):
 
     @staticmethod
     def save_hash_type(user_id_hash_type, state):
-        state["hash_type"] = user_id_hash_type.name
+        state["hash_type"] = user_id_hash_type
 
     @staticmethod
     def hash_type(state):
-        return UserIdHashType.from_string(state["hash_type"])
+        return state["hash_type"]
 
     @staticmethod
     def hash_id(salt, user_id, requester, state):
@@ -67,12 +69,12 @@ class UserIdHasher(object):
         :return: the internal_response containing the hashed user ID
         """
         hash_type = UserIdHasher.hash_type(state)
-        if hash_type == UserIdHashType.transient:
+        if hash_type == NAMEID_FORMAT_TRANSIENT:
             timestamp = datetime.datetime.now().time()
             user_id = "{req}{time}{id}".format(req=requester, time=timestamp, id=user_id)
-        elif hash_type == UserIdHashType.persistent or hash_type == UserIdHashType.pairwise:
+        elif hash_type == NAMEID_FORMAT_PERSISTENT or hash_type == "pairwise":
             user_id = "{req}{id}".format(req=requester, id=user_id)
-        elif hash_type == UserIdHashType.public:
+        elif hash_type == "public":
             user_id = "{id}".format(id=user_id)
         else:
             raise ValueError("Unknown hash type: '{}'".format(hash_type))
@@ -196,7 +198,7 @@ class InternalResponse(InternalData):
         auth_info = AuthenticationInformation.from_dict(int_resp_dict["auth_info"])
         internal_response = InternalResponse(auth_info=auth_info)
         if "hash_type" in int_resp_dict:
-            internal_response.user_id_hash_type = UserIdHashType.from_string(int_resp_dict["hash_type"])
+            internal_response.user_id_hash_type = int_resp_dict["hash_type"]
         internal_response.attributes = int_resp_dict["attr"]
         internal_response.user_id = int_resp_dict["usr_id"]
         internal_response.requester = int_resp_dict["to"]
@@ -213,5 +215,5 @@ class InternalResponse(InternalData):
                  "to": self.requester,
                  "auth_info": self.auth_info.to_dict()}
         if self.user_id_hash_type:
-            _dict["hash_type"] = self.user_id_hash_type.name
+            _dict["hash_type"] = self.user_id_hash_type
         return _dict

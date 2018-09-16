@@ -20,7 +20,7 @@ from saml2.server import Server
 from satosa.base import SAMLBaseModule
 from satosa.context import Context
 from .base import FrontendModule
-from ..internal_data import InternalRequest, UserIdHashType
+from ..internal_data import InternalRequest
 from ..logging_util import satosa_logging
 from ..response import Response
 from ..response import ServiceError
@@ -29,37 +29,6 @@ import satosa.util as util
 
 
 logger = logging.getLogger(__name__)
-
-
-def saml_name_id_format_to_hash_type(name_format):
-    """
-    Translate pySAML2 name format to satosa format
-
-    :type name_format: str
-    :rtype: satosa.internal_data.UserIdHashType
-    :param name_format: SAML2 name format
-    :return: satosa format
-    """
-    if name_format == NAMEID_FORMAT_PERSISTENT:
-        return UserIdHashType.persistent
-
-    return UserIdHashType.transient
-
-
-def hash_type_to_saml_name_id_format(hash_type):
-    """
-    Translate satosa format to pySAML2 name format
-
-    :type hash_type: satosa.internal_data.UserIdHashType
-    :rtype: str
-    :param hash_type: satosa format
-    :return: pySAML2 name format
-    """
-    if hash_type is UserIdHashType.transient:
-        return NAMEID_FORMAT_TRANSIENT
-    elif hash_type is UserIdHashType.persistent:
-        return NAMEID_FORMAT_PERSISTENT
-    return NAMEID_FORMAT_PERSISTENT
 
 
 class SAMLFrontend(FrontendModule, SAMLBaseModule):
@@ -205,15 +174,14 @@ class SAMLFrontend(FrontendModule, SAMLBaseModule):
                                                            context.request.get("RelayState"))
 
         if authn_req.name_id_policy and authn_req.name_id_policy.format:
-            name_format = saml_name_id_format_to_hash_type(authn_req.name_id_policy.format)
+            name_format = authn_req.name_id_policy.format
         else:
             # default to name id format from metadata, or just transient name id
-            name_format_from_metadata = idp.metadata[resp_args["sp_entity_id"]]["spsso_descriptor"][0].get(
-                "name_id_format")
+            name_format_from_metadata = idp.metadata[resp_args["sp_entity_id"]]["spsso_descriptor"][0].get("name_id_format")
             if name_format_from_metadata:
-                name_format = saml_name_id_format_to_hash_type(name_format_from_metadata[0]["text"])
+                name_format = name_format_from_metadata[0]["text"]
             else:
-                name_format = UserIdHashType.transient
+                name_format = NAMEID_FORMAT_TRANSIENT
 
         requester_name = self._get_sp_display_name(idp, resp_args["sp_entity_id"])
         internal_req = InternalRequest(name_format, resp_args["sp_entity_id"], requester_name)
@@ -305,8 +273,7 @@ class SAMLFrontend(FrontendModule, SAMLBaseModule):
                 ava.pop(k, None)
 
         name_id = NameID(text=internal_response.user_id,
-                         format=hash_type_to_saml_name_id_format(
-                             internal_response.user_id_hash_type),
+                         format=internal_response.user_id_hash_type,
                          sp_name_qualifier=None,
                          name_qualifier=None)
 

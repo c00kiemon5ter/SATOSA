@@ -18,9 +18,8 @@ from saml2.saml import NAMEID_FORMAT_PERSISTENT, NAMEID_FORMAT_TRANSIENT
 from saml2.samlp import NameIDPolicy
 
 from satosa.attribute_mapping import AttributeMapper
-from satosa.frontends.saml2 import SAMLFrontend, saml_name_id_format_to_hash_type, SAMLMirrorFrontend
+from satosa.frontends.saml2 import SAMLFrontend, SAMLMirrorFrontend
 from satosa.internal_data import InternalResponse, AuthenticationInformation, InternalRequest
-from satosa.internal_data import UserIdHashType
 from satosa.state import State
 from tests.users import USERS
 from tests.util import FakeSP, create_metadata_from_config_dict
@@ -147,15 +146,14 @@ class TestSAMLFrontend:
             self, context, idp_conf, sp_conf):
         samlfrontend = self.setup_for_authn_req(context, idp_conf, sp_conf, nameid_format="")
         _, internal_req = samlfrontend.handle_authn_request(context, BINDING_HTTP_REDIRECT)
-        assert internal_req.user_id_hash_type == saml_name_id_format_to_hash_type(
-            sp_conf["service"]["sp"]["name_id_format"][0])
+        assert internal_req.user_id_hash_type == sp_conf["service"]["sp"]["name_id_format"][0]
 
     def test_handle_authn_request_without_name_id_policy_and_metadata_without_name_id_format(
             self, context, idp_conf, sp_conf):
         del sp_conf["service"]["sp"]["name_id_format"]
         samlfrontend = self.setup_for_authn_req(context, idp_conf, sp_conf, nameid_format="")
         _, internal_req = samlfrontend.handle_authn_request(context, BINDING_HTTP_REDIRECT)
-        assert internal_req.user_id_hash_type == UserIdHashType.transient
+        assert internal_req.user_id_hash_type == NAMEID_FORMAT_TRANSIENT
 
     def test_handle_authn_response_without_relay_state(self, context, idp_conf, sp_conf, internal_response):
         samlfrontend = self.setup_for_authn_req(context, idp_conf, sp_conf, relay_state=None)
@@ -203,7 +201,7 @@ class TestSAMLFrontend:
         samlfrontend = SAMLFrontend(None, internal_attributes, conf, base_url, "saml_frontend")
         samlfrontend.register_endpoints(["testprovider"])
 
-        internal_req = InternalRequest(saml_name_id_format_to_hash_type(NAMEID_FORMAT_PERSISTENT),
+        internal_req = InternalRequest(NAMEID_FORMAT_PERSISTENT,
                                        "http://sp.example.com",
                                        "Example SP")
         filtered_attributes = samlfrontend._get_approved_attributes(samlfrontend.idp,
@@ -354,14 +352,3 @@ class TestSAMLMirrorFrontend:
         state[self.frontend.name] = {"target_entity_id": self.TARGET_ENTITY_ID}
         idp = self.frontend._load_idp_dynamic_entity_id(state)
         assert idp.config.entityid == "{}/{}".format(idp_conf["entityid"], self.TARGET_ENTITY_ID)
-
-
-class TestSamlNameIdFormatToHashType:
-    def test_should_default_to_transient(self):
-        assert saml_name_id_format_to_hash_type("foobar") == UserIdHashType.transient
-
-    def test_should_map_transient(self):
-        assert saml_name_id_format_to_hash_type(NAMEID_FORMAT_TRANSIENT) == UserIdHashType.transient
-
-    def test_should_map_persistent(self):
-        assert saml_name_id_format_to_hash_type(NAMEID_FORMAT_PERSISTENT) == UserIdHashType.persistent
