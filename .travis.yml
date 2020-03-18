@@ -50,6 +50,8 @@ jobs:
 
     - stage: Build docker image by commit and deploy on DockerHub
       script:
+        - set -e
+        - false
         - docker build -f Dockerfile -t "${DOCKER_TAG_COMMIT}" .
         - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASS"
         - docker push "$DOCKER_REPO"
