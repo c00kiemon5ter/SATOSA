@@ -51,7 +51,6 @@ jobs:
     - stage: Build docker image by commit and deploy on DockerHub
       script:
         - set -e
-        - false
         - docker build -f Dockerfile -t "${DOCKER_TAG_COMMIT}" .
         - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASS"
         - docker push "$DOCKER_REPO"
@@ -59,6 +58,7 @@ jobs:
     - stage: Tag docker image with branch name
       if: branch IS present
       script:
+        - set -e
         - docker pull "${DOCKER_TAG_COMMIT}"
         - docker tag "${DOCKER_TAG_COMMIT}" "${DOCKER_TAG_BRANCH}"
         - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASS"
@@ -67,6 +67,7 @@ jobs:
     - stage: Tag docker image with git-tag
       if: tag IS present
       script:
+        - set -e
         - docker pull "${DOCKER_TAG_COMMIT}"
         - docker tag "${DOCKER_TAG_COMMIT}" "${DOCKER_TAG_GITTAG}"
         - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASS"
@@ -75,6 +76,7 @@ jobs:
     - stage: Tag docker image as latest
       if: branch = master
       script:
+        - set -e
         - docker pull "${DOCKER_TAG_COMMIT}"
         - docker tag "${DOCKER_TAG_COMMIT}" "${DOCKER_TAG_LATEST"
         - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASS"
