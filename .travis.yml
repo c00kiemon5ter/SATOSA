@@ -25,13 +25,9 @@ jobs:
 
     - stage: Deploy latest image on DockerHub
       script: skip
-      if: branch = master
       deploy:
         - provider: script
           script: scripts/travis_create_docker_image_branch.sh
-          on:
-            repo: IdentityPython/SATOSA
-            branch: master
 
     - stage: Deploy new release on GitHub
       if: tag IS present
