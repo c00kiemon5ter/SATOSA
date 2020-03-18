@@ -23,11 +23,41 @@ jobs:
     - python: 3.9-dev
     - python: pypy3
 
-    - stage: Deploy latest image on DockerHub
-      script: skip
-      deploy:
-        - provider: script
-          script: scripts/travis_create_docker_image_branch.sh
+    - stage: Travis env-var information
+      script:
+        - echo "TRAVIS_BUILD_ID: $TRAVIS_BUILD_ID"
+        - echo "TRAVIS_BUILD_NUMBER: $TRAVIS_BUILD_NUMBER"
+        - echo "TRAVIS_COMMIT: $TRAVIS_COMMIT"
+        - echo "TRAVIS_JOB_ID: $TRAVIS_JOB_ID"
+        - echo "TRAVIS_JOB_NUMBER: $TRAVIS_JOB_NUMBER"
+        - echo "TRAVIS_REPO_SLUG: $TRAVIS_REPO_SLUG"
+        - echo "TRAVIS_BRANCH: $TRAVIS_BRANCH"
+        - echo "TRAVIS_TAG: $TRAVIS_TAG"
+        - echo "TRAVIS_PULL_REQUEST: $TRAVIS_PULL_REQUEST"
+        - echo "TRAVIS_PULL_REQUEST_BRANCH: $TRAVIS_PULL_REQUEST_BRANCH"
+        - echo "TRAVIS_PULL_REQUEST_SHA: $TRAVIS_PULL_REQUEST_SHA"
+        - echo "TRAVIS_PULL_REQUEST_SLUG: $TRAVIS_PULL_REQUEST_SLUG"
+
+    - stage: Tag docker image as branch and deploy on DockerHub
+      if: branch IS present
+      script:
+        - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASS"
+        - docker build -f Dockerfile -t "satosa/satosa:${TRAVIS_BRANCH}"
+        - docker push "satosa/satosa"
+
+    - stage: Tag docker image as latest and deploy on DockerHub
+      if: branch = master
+      script:
+        - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASS"
+        - docker tag "${REPO}:${TRAVIS_BRANCH}" "${REPO}:latest"
+        - docker push "satosa/satosa"
+
+    - stage: Tag docker image as new release and deploy on DockerHub
+      if: tag IS present
+      script:
+        - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASS"
+        - docker tag "${REPO}:${TRAVIS_BRANCH}" "${REPO}:${TRAVIS_TAG}"
+        - docker push "satosa/satosa"
 
     - stage: Deploy new release on GitHub
       if: tag IS present
@@ -49,16 +79,6 @@ jobs:
           user: Lundberg
           password:
             secure: NwkpOakaeJjErjTF4Y5MWeHzMvkxYZqrBFdRkzfenVfkWsomuyy553A691d3lc1+oREsh1fJJLjpZQYxTLUFIHOUmt/9zr02rFfguzj7hEYfWF8wHBXG6YSWv6T3aCA4RTMXvvzv9cHf1zfxh0fS7kgc+NRMAnd01diVLfYpBciLgmQ31J4mlwShp8yBQUoRBIvzSdzrgjr0TzCQZXB9xM6R2t/oJgXLo6Zz8dTzqq3De9nOU/1P2ZHLxodDikuFdu2/0CjoDgFXB0KnGKGKmJ6G1WMCVvi7abY7smmGA3s4a4NVL7Cirx6VwIj79PsAcgupr2iBAQk/GsPffzdpLtIrBek9u//p84hxrj/IaJWgPOeKeD7+r2Kc2g0r2dQjaM+9MqBx9/lC57xJRX/JHLQWirXfCucB9YyPun5I13Sf3hArkssQy/Jvd2aLFZ885BTfow6TAwl1ud+UPeauvEj6myKO98sko/3Y521EGXRofLGaPokLyPjI/3I4N4jCvw8m86eZAjjIhPFL7JKHf8OVc5gQCYQy3kxiF5wyvbfOeMBp0sk9UvJOrWvBEXFrimAZPu8o8T5WtlQAV02q7rxUwhMd+fpnbGewsl7Ob6eE4rGVrfWQIb86wOHbbJk3lCwPytjEFEI2bdUfRUFcrWxhC040hRP0gzVKLa+nBHM=
-          on:
-            repo: IdentityPython/SATOSA
-            tags: true
-
-    - stage: Deploy new release on DockerHub
-      if: tag IS present
-      script: skip
-      deploy:
-        - provider: script
-          script: scripts/travis_create_docker_image_tag.sh
           on:
             repo: IdentityPython/SATOSA
             tags: true
