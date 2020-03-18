@@ -42,6 +42,7 @@ jobs:
         TRAVIS_PULL_REQUEST_SLUG: $TRAVIS_PULL_REQUEST_SLUG
 
         DOCKER_REPO: $DOCKER_REPO
+        DOCKER_SRC: $DOCKER_SRC
         EOF
 
     - stage: Build docker image by commit and deploy on DockerHub
