@@ -66,7 +66,7 @@ jobs:
         - docker push "$DOCKER_REPO"
 
     - stage: Tag docker image with pull request number
-      if: type IS pull_request
+      if: type = pull_request
       script:
         - set -e
         - docker pull "$DOCKER_TAG_COMMIT"
